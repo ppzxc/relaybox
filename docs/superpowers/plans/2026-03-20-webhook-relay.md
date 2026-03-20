@@ -105,7 +105,7 @@ mkdir -p internal/adapter/input/websocket
 mkdir -p internal/adapter/output/sqlite/db
 mkdir -p internal/adapter/output/filequeue
 mkdir -p internal/adapter/output/webhook
-mkdir -p config
+mkdir -p internal/config
 mkdir -p test/e2e
 mkdir -p data
 echo "data/" >> .gitignore
@@ -3047,7 +3047,7 @@ func TestE2E_Healthz(t *testing.T) {
 - [ ] **Step 2: E2E 테스트 실행**
 
 ```bash
-go test ./e2e/... -v -timeout 30s
+go test ./test/e2e/... -v -timeout 30s
 ```
 
 Expected: PASS
@@ -3080,7 +3080,7 @@ Expected: `webhook-relay v0.1.0`
 - [ ] **Step 6: 최종 커밋**
 
 ```bash
-git add e2e/
+git add test/e2e/
 git commit -m "test(e2e): add end-to-end test covering full alert flow"
 ```
 
