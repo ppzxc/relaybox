@@ -3,7 +3,7 @@ package output
 import (
 	"context"
 
-	"webhook-relay/internal/domain"
+	"relaybox/internal/domain"
 )
 
 // AckFunc 전달 성공 후 호출 — 큐에서 영구 삭제

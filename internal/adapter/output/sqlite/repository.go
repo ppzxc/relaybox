@@ -7,8 +7,8 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
-	"webhook-relay/internal/adapter/output/sqlite/db"
-	"webhook-relay/internal/domain"
+	"relaybox/internal/adapter/output/sqlite/db"
+	"relaybox/internal/domain"
 )
 
 // 컴파일 타임 인터페이스 검증

@@ -11,15 +11,15 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	httpadapter "webhook-relay/internal/adapter/input/http"
-	wsadapter "webhook-relay/internal/adapter/input/websocket"
-	"webhook-relay/internal/adapter/output/filequeue"
-	sqliteadapter "webhook-relay/internal/adapter/output/sqlite"
-	webhookadapter "webhook-relay/internal/adapter/output/webhook"
-	"webhook-relay/internal/application/port/output"
-	"webhook-relay/internal/application/service"
-	cfgpkg "webhook-relay/internal/config"
-	"webhook-relay/internal/domain"
+	httpadapter "relaybox/internal/adapter/input/http"
+	wsadapter "relaybox/internal/adapter/input/websocket"
+	"relaybox/internal/adapter/output/filequeue"
+	sqliteadapter "relaybox/internal/adapter/output/sqlite"
+	webhookadapter "relaybox/internal/adapter/output/webhook"
+	"relaybox/internal/application/port/output"
+	"relaybox/internal/application/service"
+	cfgpkg "relaybox/internal/config"
+	"relaybox/internal/domain"
 )
 
 func main() {
@@ -30,7 +30,7 @@ func main() {
 
 func rootCmd() *cobra.Command {
 	var cfgPath string
-	root := &cobra.Command{Use: "webhook-relay", Short: "Monitoring alert relay hub"}
+	root := &cobra.Command{Use: "relaybox", Short: "Monitoring alert relay hub"}
 	start := &cobra.Command{
 		Use:   "start",
 		Short: "Start server",
@@ -40,7 +40,7 @@ func rootCmd() *cobra.Command {
 	root.AddCommand(start)
 	root.AddCommand(&cobra.Command{
 		Use: "version", Short: "Print version",
-		Run: func(_ *cobra.Command, _ []string) { fmt.Println("webhook-relay v0.1.0") },
+		Run: func(_ *cobra.Command, _ []string) { fmt.Println("relaybox v0.2.0") },
 	})
 	return root
 }

@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"webhook-relay/internal/adapter/output/webhook"
-	"webhook-relay/internal/application/port/output"
-	"webhook-relay/internal/domain"
+	"relaybox/internal/adapter/output/webhook"
+	"relaybox/internal/application/port/output"
+	"relaybox/internal/domain"
 )
 
 // 컴파일 타임 인터페이스 검증

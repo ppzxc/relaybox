@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"webhook-relay/internal/config"
+	"relaybox/internal/config"
 )
 
 const testYAML = `

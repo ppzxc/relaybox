@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"webhook-relay/internal/application/port/output"
-	"webhook-relay/internal/application/service"
-	"webhook-relay/internal/domain"
+	"relaybox/internal/application/port/output"
+	"relaybox/internal/application/service"
+	"relaybox/internal/domain"
 )
 
 type mockAlertQueue struct {

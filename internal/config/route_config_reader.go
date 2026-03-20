@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"webhook-relay/internal/domain"
+	"relaybox/internal/domain"
 )
 
 type InMemoryRouteConfigReader struct {

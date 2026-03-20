@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"webhook-relay/internal/domain"
+	"relaybox/internal/domain"
 )
 
 func TestRenderTemplate(t *testing.T) {

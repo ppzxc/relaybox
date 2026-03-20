@@ -6,7 +6,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
-	"webhook-relay/internal/domain"
+	"relaybox/internal/domain"
 )
 
 type ServerConfig struct {

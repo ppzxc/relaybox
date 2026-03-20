@@ -6,7 +6,7 @@ import (
 	"errors"
 	"net/http"
 
-	"webhook-relay/internal/domain"
+	"relaybox/internal/domain"
 )
 
 type contextKey string

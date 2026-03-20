@@ -6,8 +6,8 @@ import (
 	"net/url"
 
 	"github.com/gorilla/websocket"
-	"webhook-relay/internal/application/port/input"
-	"webhook-relay/internal/domain"
+	"relaybox/internal/application/port/input"
+	"relaybox/internal/domain"
 )
 
 type Handler struct {

@@ -1,10 +1,10 @@
 openapi: "3.1.0"
 
 info:
-  title: webhook-relay API
+  title: relaybox API
   version: "2026-03-20"
   description: |
-    Webhook relay hub. Receives alerts from monitoring apps (Beszel, Dozzle, etc.)
+    relaybox — generic relay hub. Receives alerts from monitoring apps (Beszel, Dozzle, etc.)
     and forwards them to external channels via templates.
 
 servers:

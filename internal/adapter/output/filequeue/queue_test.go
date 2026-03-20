@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"webhook-relay/internal/adapter/output/filequeue"
-	"webhook-relay/internal/application/port/output"
-	"webhook-relay/internal/domain"
+	"relaybox/internal/adapter/output/filequeue"
+	"relaybox/internal/application/port/output"
+	"relaybox/internal/domain"
 )
 
 // 컴파일 타임 인터페이스 검증

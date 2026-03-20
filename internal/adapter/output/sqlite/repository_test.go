@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	sqliteadapter "webhook-relay/internal/adapter/output/sqlite"
-	"webhook-relay/internal/domain"
+	sqliteadapter "relaybox/internal/adapter/output/sqlite"
+	"relaybox/internal/domain"
 )
 
 // 컴파일 타임 인터페이스 검증

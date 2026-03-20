@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/oklog/ulid/v2"
-	"webhook-relay/internal/application/port/output"
-	"webhook-relay/internal/domain"
+	"relaybox/internal/application/port/output"
+	"relaybox/internal/domain"
 )
 
 type AlertService struct {

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"webhook-relay/internal/domain"
+	"relaybox/internal/domain"
 )
 
 func TestAlertStatus_IsValid(t *testing.T) {

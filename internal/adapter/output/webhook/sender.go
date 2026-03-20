@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"webhook-relay/internal/domain"
+	"relaybox/internal/domain"
 )
 
 const defaultTimeoutSec = 10

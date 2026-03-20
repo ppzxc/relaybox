@@ -1,4 +1,4 @@
-module webhook-relay
+module relaybox
 
 go 1.25
 

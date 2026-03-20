@@ -12,14 +12,14 @@ import (
 	"testing"
 	"time"
 
-	httpadapter "webhook-relay/internal/adapter/input/http"
-	"webhook-relay/internal/adapter/output/filequeue"
-	sqliteadapter "webhook-relay/internal/adapter/output/sqlite"
-	webhookadapter "webhook-relay/internal/adapter/output/webhook"
-	"webhook-relay/internal/application/port/output"
-	"webhook-relay/internal/application/service"
-	cfgpkg "webhook-relay/internal/config"
-	"webhook-relay/internal/domain"
+	httpadapter "relaybox/internal/adapter/input/http"
+	"relaybox/internal/adapter/output/filequeue"
+	sqliteadapter "relaybox/internal/adapter/output/sqlite"
+	webhookadapter "relaybox/internal/adapter/output/webhook"
+	"relaybox/internal/application/port/output"
+	"relaybox/internal/application/service"
+	cfgpkg "relaybox/internal/config"
+	"relaybox/internal/domain"
 )
 
 // configSourceResolver는 cmd/server/main.go와 동일한 로직을 E2E에서 재구현 (DI 검증용)

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # 빌드 (CGO 필수 — go-sqlite3)
-CGO_ENABLED=1 go build -o webhook-relay ./cmd/server/
+CGO_ENABLED=1 go build -o relaybox ./cmd/server/
 
 # 전체 테스트 (race detector 포함)
 go test -race ./... -timeout 60s

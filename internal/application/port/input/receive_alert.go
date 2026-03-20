@@ -3,7 +3,7 @@ package input
 import (
 	"context"
 
-	"webhook-relay/internal/domain"
+	"relaybox/internal/domain"
 )
 
 // ReceiveAlertUseCase 알람 수신 유스케이스.

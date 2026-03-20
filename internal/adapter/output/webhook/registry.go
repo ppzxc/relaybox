@@ -3,8 +3,8 @@ package webhook
 import (
 	"fmt"
 
-	"webhook-relay/internal/application/port/output"
-	"webhook-relay/internal/domain"
+	"relaybox/internal/application/port/output"
+	"relaybox/internal/domain"
 )
 
 type Registry struct {

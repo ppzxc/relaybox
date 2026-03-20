@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	httpadapter "webhook-relay/internal/adapter/input/http"
-	"webhook-relay/internal/domain"
+	httpadapter "relaybox/internal/adapter/input/http"
+	"relaybox/internal/domain"
 )
 
 type mockUseCase struct {

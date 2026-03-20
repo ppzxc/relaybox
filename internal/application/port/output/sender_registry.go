@@ -1,6 +1,6 @@
 package output
 
-import "webhook-relay/internal/domain"
+import "relaybox/internal/domain"
 
 type SenderRegistry interface {
 	// Get 은 AlertSender(named interface)를 반환한다.

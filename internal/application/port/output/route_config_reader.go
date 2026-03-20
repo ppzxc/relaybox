@@ -3,7 +3,7 @@ package output
 import (
 	"context"
 
-	"webhook-relay/internal/domain"
+	"relaybox/internal/domain"
 )
 
 type RouteConfigReader interface {

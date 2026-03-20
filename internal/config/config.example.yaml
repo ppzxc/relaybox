@@ -37,7 +37,7 @@ routes:
 
 storage:
   type: SQLITE
-  path: "./data/webhook-relay.db"
+  path: "./data/relaybox.db"
 
 queue:
   type: FILE

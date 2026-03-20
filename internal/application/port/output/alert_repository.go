@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"webhook-relay/internal/domain"
+	"relaybox/internal/domain"
 )
 
 type AlertRepository interface {

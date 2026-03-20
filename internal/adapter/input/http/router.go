@@ -5,10 +5,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"webhook-relay/internal/adapter/input/websocket"
-	"webhook-relay/internal/apidocs"
-	"webhook-relay/internal/application/port/input"
-	"webhook-relay/internal/domain"
+	"relaybox/internal/adapter/input/websocket"
+	"relaybox/internal/apidocs"
+	"relaybox/internal/application/port/input"
+	"relaybox/internal/domain"
 )
 
 // API 버전 — X-API-Version 헤더로 반환
