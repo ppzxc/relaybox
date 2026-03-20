@@ -78,7 +78,9 @@ func (w *DeliveryWorker) processOne(ctx context.Context) error {
 			slog.Error("failed to update delivery state to delivered", "alertID", alert.ID, "err", err)
 		}
 	} else {
-		_ = nack()
+		if err := nack(); err != nil {
+			slog.Warn("nack failed", "alertID", alert.ID, "err", err)
+		}
 		if err := w.repo.UpdateDeliveryState(ctx, alert.ID, domain.AlertStatusFailed, alert.RetryCount+1, now); err != nil {
 			slog.Error("failed to update delivery state to failed", "alertID", alert.ID, "err", err)
 		}

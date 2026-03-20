@@ -47,7 +47,7 @@ func (m *mockRegistry) Get(_ domain.ChannelType) (output.AlertSender, error) {
 	return m.sender, nil
 }
 
-func TestDeliveryWorker_UpdateDeliveryState_ErrorIsLogged(t *testing.T) {
+func TestDeliveryWorker_UpdateDeliveryState_ErrorDoesNotBreakWorker(t *testing.T) {
 	// UpdateDeliveryState가 에러를 반환해도 워커가 정상 동작(send 완료, 패닉 없음)해야 한다.
 	alert := domain.Alert{ID: "w-err", Source: domain.SourceTypeBeszel, Payload: domain.RawPayload(`{}`), Status: domain.AlertStatusPending, Version: 1}
 	queue := &mockAlertQueue{alerts: []domain.Alert{alert}}

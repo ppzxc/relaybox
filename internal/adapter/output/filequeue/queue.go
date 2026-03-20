@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"
@@ -35,7 +36,9 @@ func recoverOrphans(dir string) {
 		if strings.HasSuffix(e.Name(), ".json.processing") {
 			proc := filepath.Join(dir, e.Name())
 			orig := strings.TrimSuffix(proc, ".processing")
-			os.Rename(proc, orig)
+			if err := os.Rename(proc, orig); err != nil {
+				slog.Warn("failed to recover orphan file", "file", proc, "err", err)
+			}
 		}
 	}
 }
