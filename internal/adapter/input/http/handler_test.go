@@ -177,3 +177,30 @@ func TestHandler_SourceNotFound(t *testing.T) {
 		t.Logf("status = %d (expected 401 since unknown source has no registered token)", w.Code)
 	}
 }
+
+func TestWebSocketEndpoint_NoToken_Returns401(t *testing.T) {
+	router := newTestRouter(func(_ context.Context, _ domain.SourceType, _ []byte) (string, error) {
+		return "id", nil
+	})
+
+	tests := []struct {
+		name string
+		auth string
+	}{
+		{"no token", ""},
+		{"wrong token", "Bearer wrong-token"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/sources/beszel/alerts/ws", nil)
+			if tc.auth != "" {
+				req.Header.Set("Authorization", tc.auth)
+			}
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+			if w.Code != http.StatusUnauthorized {
+				t.Errorf("status = %d, want 401", w.Code)
+			}
+		})
+	}
+}
