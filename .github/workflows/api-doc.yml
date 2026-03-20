@@ -7,11 +7,16 @@ on:
       - "internal/apidocs/openapi.yaml"
       - "internal/apidocs/asyncapi.yaml"
       - ".spectral.yaml"
+      - ".github/workflows/api-doc.yml"
   pull_request:
     paths:
       - "internal/apidocs/openapi.yaml"
       - "internal/apidocs/asyncapi.yaml"
       - ".spectral.yaml"
+      - ".github/workflows/api-doc.yml"
+
+permissions:
+  contents: read
 
 jobs:
   validate-openapi:
@@ -22,7 +27,7 @@ jobs:
 
       - name: Spectral lint
         run: >
-          npx --yes @stoplight/spectral-cli@6
+          npx --yes @stoplight/spectral-cli@6.15.0
           lint internal/apidocs/openapi.yaml
           --ruleset .spectral.yaml
           --fail-severity error
@@ -35,5 +40,5 @@ jobs:
 
       - name: AsyncAPI validate
         run: >
-          npx --yes @asyncapi/cli@3
+          npx --yes @asyncapi/cli@3.6.0
           validate internal/apidocs/asyncapi.yaml
