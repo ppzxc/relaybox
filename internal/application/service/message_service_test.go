@@ -3,10 +3,11 @@ package service_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
-	"relaybox/internal/adapter/input/parser"
+	"relaybox/internal/application/port/input"
 	"relaybox/internal/application/port/output"
 	"relaybox/internal/application/service"
 	"relaybox/internal/domain"
@@ -38,6 +39,27 @@ type mockQueue struct {
 func (m *mockQueue) Enqueue(ctx context.Context, a domain.Message) error { return m.enqueueFn(ctx, a) }
 func (m *mockQueue) Dequeue(_ context.Context) (domain.Message, output.AckFunc, output.NackFunc, error) {
 	return domain.Message{}, nil, nil, nil
+}
+
+type mockParser struct {
+	result map[string]any
+	err    error
+	typ    string
+}
+
+func (m *mockParser) Parse(_ string, _ []byte) (map[string]any, error) { return m.result, m.err }
+func (m *mockParser) Type() string                                      { return m.typ }
+
+type mockParserRegistry struct {
+	parsers map[string]input.Parser
+}
+
+func (m *mockParserRegistry) Get(t string) (input.Parser, error) {
+	p, ok := m.parsers[t]
+	if !ok {
+		return nil, fmt.Errorf("not found")
+	}
+	return p, nil
 }
 
 func TestMessageService_Receive_Success(t *testing.T) {
@@ -83,8 +105,14 @@ func TestMessageService_Receive_WithParser(t *testing.T) {
 	repo := &mockRepo{saveFn: func(_ context.Context, a domain.Message) error { saved = a; return nil }}
 	queue := &mockQueue{enqueueFn: func(_ context.Context, _ domain.Message) error { return nil }}
 
-	registry := parser.NewInMemoryParserRegistry()
-	registry.Register(parser.NewJSONParser())
+	registry := &mockParserRegistry{
+		parsers: map[string]input.Parser{
+			"json": &mockParser{
+				result: map[string]any{"host": "srv1", "port": float64(8080)},
+				typ:    "json",
+			},
+		},
+	}
 
 	parserTypes := map[domain.InputType]string{
 		domain.InputTypeBeszel: "json",
@@ -125,8 +153,14 @@ func TestMessageService_Receive_ParserFailsGracefully(t *testing.T) {
 	repo := &mockRepo{saveFn: func(_ context.Context, a domain.Message) error { saved = a; return nil }}
 	queue := &mockQueue{enqueueFn: func(_ context.Context, _ domain.Message) error { return nil }}
 
-	registry := parser.NewInMemoryParserRegistry()
-	registry.Register(parser.NewJSONParser())
+	registry := &mockParserRegistry{
+		parsers: map[string]input.Parser{
+			"json": &mockParser{
+				err: errors.New("parse error"),
+				typ: "json",
+			},
+		},
+	}
 
 	parserTypes := map[domain.InputType]string{
 		domain.InputTypeBeszel: "json",

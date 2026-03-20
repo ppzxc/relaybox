@@ -32,7 +32,7 @@ func (p *RegexParser) Parse(_ string, body []byte) (map[string]any, error) {
 
 	result := make(map[string]any)
 	for i, name := range p.pattern.SubexpNames() {
-		if i != 0 && name != "" {
+		if i != 0 && name != "" && match[i] != nil {
 			result[name] = string(match[i])
 		}
 	}

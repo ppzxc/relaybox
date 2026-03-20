@@ -22,6 +22,12 @@ func (r *InMemoryParserRegistry) Register(p input.Parser) {
 	r.parsers[p.Type()] = p
 }
 
+// RegisterWithKey registers a parser under an explicit key rather than its Type().
+// Useful for parsers that need per-instance keys, such as regex parsers with unique patterns.
+func (r *InMemoryParserRegistry) RegisterWithKey(key string, p input.Parser) {
+	r.parsers[key] = p
+}
+
 func (r *InMemoryParserRegistry) Get(parserType string) (input.Parser, error) {
 	p, ok := r.parsers[parserType]
 	if !ok {

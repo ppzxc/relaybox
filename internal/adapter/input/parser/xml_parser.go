@@ -13,6 +13,8 @@ func NewXMLParser() *XMLParser { return &XMLParser{} }
 
 func (p *XMLParser) Type() string { return "xml" }
 
+// Parse parses XML body into a flat map of element names to text content.
+// Limitations: XML attributes are not captured; for repeated element names, last value wins.
 func (p *XMLParser) Parse(_ string, body []byte) (map[string]any, error) {
 	if len(body) == 0 {
 		return nil, fmt.Errorf("xml parser: empty body")

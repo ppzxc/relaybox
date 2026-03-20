@@ -92,9 +92,19 @@ func runServer(cfgPath string) error {
 
 	parserTypes := make(map[domain.InputType]string)
 	for _, inp := range cfg.Inputs {
-		if inp.Parser != "" {
-			parserTypes[domain.InputType(inp.Type)] = inp.Parser
+		if inp.Parser == "" {
+			continue
 		}
+		parserKey := inp.Parser
+		if inp.Parser == "regex" {
+			regexParser, err := parser.NewRegexParser(inp.Pattern)
+			if err != nil {
+				return fmt.Errorf("input %q: %w", inp.ID, err)
+			}
+			parserKey = "regex:" + inp.ID
+			parserRegistry.RegisterWithKey(parserKey, regexParser)
+		}
+		parserTypes[domain.InputType(inp.Type)] = parserKey
 	}
 
 	// 애플리케이션 서비스
