@@ -23,6 +23,12 @@ inputs:
     type: DOZZLE
     parser: json
     secret: "change-me"
+  - id: tcp-input
+    type: GENERIC
+    address: ":9001"
+    delimiter: "\n"
+    parser: json
+    secret: ""
 
 outputs:
   - id: ops-webhook

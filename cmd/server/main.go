@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	httpadapter "relaybox/internal/adapter/input/http"
 	"relaybox/internal/adapter/input/parser"
+	tcpadapter "relaybox/internal/adapter/input/tcp"
 	wsadapter "relaybox/internal/adapter/input/websocket"
 	"relaybox/internal/adapter/output/expression"
 	"relaybox/internal/adapter/output/filequeue"
@@ -137,6 +138,25 @@ func runServer(cfgPath string) error {
 
 	worker.Start(ctx, cfg.Queue.WorkerCount)
 
+	// TCP listeners (per InputConfig with Address set)
+	for _, inp := range cfg.Inputs {
+		if inp.Address == "" {
+			continue
+		}
+		delimiter := byte('\n')
+		if inp.Delimiter != "" {
+			delimiter = inp.Delimiter[0]
+		}
+		contentType := parserToContentType(inp.Parser)
+		tcpL := tcpadapter.NewListener(msgSvc, domain.InputType(inp.Type), inp.Address, delimiter, contentType)
+		go func() {
+			slog.Info("tcp listener starting", "address", inp.Address, "inputType", inp.Type)
+			if err := tcpL.Start(ctx); err != nil {
+				slog.Error("tcp listener error", "address", inp.Address, "err", err)
+			}
+		}()
+	}
+
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
 		Handler:      router,
@@ -196,6 +216,19 @@ func (r *configInputResolver) Resolve(inputID string) (domain.InputType, error) 
 
 func (r *configInputResolver) ValidateToken(inputID, token string) bool {
 	return r.secrets[inputID] == token
+}
+
+func parserToContentType(parserType string) string {
+	switch parserType {
+	case "json":
+		return "application/json"
+	case "xml":
+		return "application/xml"
+	case "form":
+		return "application/x-www-form-urlencoded"
+	default:
+		return "application/octet-stream"
+	}
 }
 
 func setupLogger(cfg *cfgpkg.Config) {

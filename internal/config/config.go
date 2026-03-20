@@ -27,11 +27,13 @@ type LogConfig struct {
 }
 
 type InputConfig struct {
-	ID      string `mapstructure:"id"`
-	Type    string `mapstructure:"type"`
-	Parser  string `mapstructure:"parser"`
-	Secret  string `mapstructure:"secret"`
-	Pattern string `mapstructure:"pattern"` // for regex parser
+	ID        string `mapstructure:"id"`
+	Type      string `mapstructure:"type"`
+	Parser    string `mapstructure:"parser"`
+	Secret    string `mapstructure:"secret"`
+	Pattern   string `mapstructure:"pattern"`   // for regex parser
+	Address   string `mapstructure:"address"`   // TCP: bind address, e.g. ":9000"
+	Delimiter string `mapstructure:"delimiter"` // TCP: message delimiter, default "\n"
 }
 
 type OutputConfig struct {
