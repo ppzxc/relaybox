@@ -146,6 +146,24 @@ func TestHandler_PostAlert_EmptyToken(t *testing.T) {
 	}
 }
 
+func TestHandler_PostAlert_BodyTooLarge(t *testing.T) {
+	router := newTestRouter(func(_ context.Context, _ domain.SourceType, _ []byte) (string, error) {
+		return "id", nil
+	})
+	// 1MB + 1byte 초과 요청
+	oversized := strings.Repeat("x", 1<<20+1)
+	req := httptest.NewRequest(http.MethodPost, "/sources/beszel/alerts", strings.NewReader(oversized))
+	req.Header.Set("Authorization", "Bearer test-token")
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusRequestEntityTooLarge {
+		t.Errorf("status = %d, want 413", w.Code)
+	}
+}
+
 func TestHandler_SourceNotFound(t *testing.T) {
 	router := newTestRouter(func(_ context.Context, _ domain.SourceType, _ []byte) (string, error) {
 		return "", domain.ErrSourceNotFound
