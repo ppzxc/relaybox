@@ -84,7 +84,7 @@ func TestInMemoryRouteConfigReader(t *testing.T) {
 	cfg, _ := config.Load(writeConfig(t, testYAML))
 	reader := config.NewInMemoryRouteConfigReader(cfg)
 
-	channels, err := reader.GetChannels(nil, "beszel")
+	channels, err := reader.GetChannels(nil, "BESZEL") // query by source type, not source ID
 	if err != nil {
 		t.Fatalf("GetChannels error: %v", err)
 	}

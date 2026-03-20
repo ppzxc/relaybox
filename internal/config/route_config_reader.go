@@ -29,9 +29,19 @@ func (r *InMemoryRouteConfigReader) Update(cfg *Config) {
 			RetryDelayMs: c.RetryDelayMs, SkipTLSVerify: c.SkipTLSVerify,
 		}
 	}
+	// sourceID → sourceType mapping (e.g. "beszel" → "BESZEL")
+	sourceTypeByID := make(map[string]string, len(cfg.Sources))
+	for _, s := range cfg.Sources {
+		sourceTypeByID[s.ID] = s.Type
+	}
+	// Routes keyed by source type so delivery worker can query with alert.Source
 	routes := make(map[string][]string, len(cfg.Routes))
 	for _, rt := range cfg.Routes {
-		routes[rt.SourceID] = rt.ChannelIDs
+		key := sourceTypeByID[rt.SourceID]
+		if key == "" {
+			key = rt.SourceID // fallback
+		}
+		routes[key] = rt.ChannelIDs
 	}
 	r.mu.Lock()
 	r.channels = channels
