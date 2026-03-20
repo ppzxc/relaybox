@@ -9,14 +9,20 @@ import (
 	"webhook-relay/internal/domain"
 )
 
-var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+type Handler struct {
+	uc       input.ReceiveAlertUseCase
+	upgrader websocket.Upgrader
+}
 
-type Handler struct{ uc input.ReceiveAlertUseCase }
-
-func NewHandler(uc input.ReceiveAlertUseCase) *Handler { return &Handler{uc: uc} }
+func NewHandler(uc input.ReceiveAlertUseCase) *Handler {
+	return &Handler{
+		uc:       uc,
+		upgrader: websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }},
+	}
+}
 
 func (h *Handler) ServeWS(w http.ResponseWriter, r *http.Request, source domain.SourceType) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+	conn, err := h.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		slog.Warn("ws upgrade failed", "err", err)
 		return
