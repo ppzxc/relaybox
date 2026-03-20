@@ -110,7 +110,7 @@ All expressions (filter, mapping, routing, template) share the same `data` conte
 | `data.id` | Message ULID |
 | `data.input` | Input type (`BESZEL`, `DOZZLE`, `GENERIC`, etc.) |
 | `data.payload` | Raw payload string |
-| `data.created_at` | Receive timestamp |
+| `data.createdAt` | Receive timestamp (RFC3339) |
 | `data.<field>` | Any field added via `mapping` expressions |
 
 **Filter** — boolean expression; message is dropped if `false`:
