@@ -43,6 +43,9 @@ func TestAsyncAPIHandler(t *testing.T) {
 	if w.Body.Len() == 0 {
 		t.Error("body is empty")
 	}
+	if !strings.Contains(w.Body.String(), "webhook-relay WebSocket API") {
+		t.Error("asyncapi.yaml does not contain expected title")
+	}
 }
 
 func TestRedocHTMLHandler(t *testing.T) {
