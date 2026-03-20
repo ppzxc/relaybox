@@ -1,0 +1,31 @@
+# Binaries
+webhook-relay
+*.exe
+*.out
+
+# Build output
+/dist/
+
+# Data files (runtime)
+/data/
+
+# Config with secrets (use config.example.yaml instead)
+config.yaml
+config.local.yaml
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+*.test
+*.prof
+vendor/
+
+# Claude local settings
+.claude/settings.local.json
