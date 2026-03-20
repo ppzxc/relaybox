@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
@@ -86,7 +87,8 @@ func Watch(v *viper.Viper, onChange func(cfg *Config)) {
 	v.OnConfigChange(func(_ fsnotify.Event) {
 		cfg, err := unmarshalAndValidate(v)
 		if err != nil {
-			return // 유효하지 않은 설정 무시
+			slog.Warn("config reload rejected: invalid config", "err", err)
+			return
 		}
 		onChange(cfg)
 	})
