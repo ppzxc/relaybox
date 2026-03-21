@@ -656,3 +656,38 @@ func TestRelayWorker_InvalidTransition_SkipsUpdate(t *testing.T) {
 		t.Error("expected ack to be called regardless of invalid transition")
 	}
 }
+
+func TestRelayWorker_ParsedDataDoesNotOverrideBuiltinKeys(t *testing.T) {
+	// ParsedData contains "input": "HACKED" — if this overwrites the builtin
+	// "input" key, the filter `data.input == "BESZEL"` will fail and the sender
+	// will never be called. The fix must protect builtin keys from ParsedData.
+	msg := domain.Message{
+		ID:      "key-collision",
+		Input:   domain.InputTypeBeszel,
+		Payload: domain.RawPayload(`{}`),
+		Status:  domain.MessageStatusPending,
+		Version: 1,
+		ParsedData: map[string]any{
+			"input": "HACKED", // must NOT overwrite builtin "input" = "BESZEL"
+		},
+	}
+	queue := &mockMessageQueue{messages: []domain.Message{msg}}
+	repo := &mockRepo{saveFn: func(_ context.Context, _ domain.Message) error { return nil }}
+	sender := &mockSender{}
+	ruleReader := &mockRuleReader{
+		rule:    domain.Rule{InputID: "beszel", Filter: `data.input == "BESZEL"`},
+		outputs: []domain.Output{{ID: "c1", Type: domain.OutputTypeWebhook}},
+	}
+	registry := &mockRegistry{sender: sender}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+
+	worker := service.NewRelayWorker(queue, repo, ruleReader, registry, newExprRegistry(), service.DefaultRelayWorkerConfig())
+	worker.Start(ctx, 1)
+	time.Sleep(150 * time.Millisecond)
+
+	if sender.count.Load() == 0 {
+		t.Error("builtin key 'input' was overwritten by ParsedData — filter failed when it should have passed")
+	}
+}
