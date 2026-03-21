@@ -223,6 +223,10 @@ func (w *RelayWorker) deliver(ctx context.Context, out domain.Output, payload []
 	return fmt.Errorf("retries exhausted: %w", lastErr)
 }
 
+var builtinEvalKeys = map[string]struct{}{
+	"id": {}, "input": {}, "payload": {}, "createdAt": {}, "status": {},
+}
+
 func buildEvalData(msg domain.Message) map[string]any {
 	data := map[string]any{
 		"id":        msg.ID,
@@ -231,9 +235,11 @@ func buildEvalData(msg domain.Message) map[string]any {
 		"createdAt": msg.CreatedAt.Format(time.RFC3339),
 		"status":    string(msg.Status),
 	}
-	// Merge ParsedData fields
+	// Merge ParsedData fields, skipping any key that would overwrite a builtin.
 	for k, v := range msg.ParsedData {
-		data[k] = v
+		if _, reserved := builtinEvalKeys[k]; !reserved {
+			data[k] = v
+		}
 	}
 	return data
 }
