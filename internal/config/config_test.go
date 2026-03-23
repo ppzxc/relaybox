@@ -134,6 +134,44 @@ func TestInMemoryRuleConfigReader(t *testing.T) {
 	}
 }
 
+func TestLoad_WorkerConfigDefaults(t *testing.T) {
+	cfg, err := config.Load(writeConfig(t, testYAML))
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	if cfg.Worker.DefaultRetryCount != 3 {
+		t.Errorf("worker.defaultRetryCount = %d, want 3", cfg.Worker.DefaultRetryCount)
+	}
+	if cfg.Worker.DefaultRetryDelay != "1s" {
+		t.Errorf("worker.defaultRetryDelay = %q, want \"1s\"", cfg.Worker.DefaultRetryDelay)
+	}
+	if cfg.Worker.PollBackoff != "500ms" {
+		t.Errorf("worker.pollBackoff = %q, want \"500ms\"", cfg.Worker.PollBackoff)
+	}
+}
+
+func TestLoad_WorkerConfigCustom(t *testing.T) {
+	yaml := testYAML + `
+worker:
+  defaultRetryCount: 5
+  defaultRetryDelay: "2s"
+  pollBackoff: "1s"
+`
+	cfg, err := config.Load(writeConfig(t, yaml))
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	if cfg.Worker.DefaultRetryCount != 5 {
+		t.Errorf("worker.defaultRetryCount = %d, want 5", cfg.Worker.DefaultRetryCount)
+	}
+	if cfg.Worker.DefaultRetryDelay != "2s" {
+		t.Errorf("worker.defaultRetryDelay = %q, want \"2s\"", cfg.Worker.DefaultRetryDelay)
+	}
+	if cfg.Worker.PollBackoff != "1s" {
+		t.Errorf("worker.pollBackoff = %q, want \"1s\"", cfg.Worker.PollBackoff)
+	}
+}
+
 func TestLoad_WithExpressionConfig(t *testing.T) {
 	yaml := `
 expression:
