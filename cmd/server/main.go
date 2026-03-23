@@ -132,7 +132,7 @@ func runServer(cfgPath string) error {
 
 	// Application services
 	msgSvc := service.NewMessageService(repo, queue, parserTypes, parserRegistry)
-	worker := service.NewRelayWorker(queue, repo, ruleReader, registry, exprRegistry, service.DefaultRelayWorkerConfig())
+	worker := service.NewRelayWorker(queue, repo, ruleReader, registry, exprRegistry, buildRelayWorkerConfig(cfg.Worker))
 
 	// HTTP + WebSocket adapter assembly
 	resolver := newConfigInputResolver(cfg)
@@ -240,6 +240,24 @@ func parserToContentType(parserType string) string {
 		slog.Warn("unknown parser type for content-type mapping", "parser", parserType)
 		return "application/octet-stream"
 	}
+}
+
+func buildRelayWorkerConfig(wc cfgpkg.WorkerConfig) service.RelayWorkerConfig {
+	def := service.DefaultRelayWorkerConfig()
+	cfg := service.RelayWorkerConfig{DefaultRetryCount: wc.DefaultRetryCount}
+	if d, err := time.ParseDuration(wc.DefaultRetryDelay); err == nil {
+		cfg.DefaultRetryDelay = d
+	} else {
+		slog.Warn("invalid worker.defaultRetryDelay, using default", "value", wc.DefaultRetryDelay, "err", err)
+		cfg.DefaultRetryDelay = def.DefaultRetryDelay
+	}
+	if d, err := time.ParseDuration(wc.PollBackoff); err == nil {
+		cfg.PollBackoff = d
+	} else {
+		slog.Warn("invalid worker.pollBackoff, using default", "value", wc.PollBackoff, "err", err)
+		cfg.PollBackoff = def.PollBackoff
+	}
+	return cfg
 }
 
 func setupLogger(cfg *cfgpkg.Config) {

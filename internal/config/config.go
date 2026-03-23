@@ -78,6 +78,12 @@ type ExpressionConfig struct {
 	DefaultEngine string `mapstructure:"defaultEngine"` // "cel" or "expr"
 }
 
+type WorkerConfig struct {
+	DefaultRetryCount int    `mapstructure:"defaultRetryCount"`
+	DefaultRetryDelay string `mapstructure:"defaultRetryDelay"` // Go duration string, e.g. "1s"
+	PollBackoff       string `mapstructure:"pollBackoff"`       // Go duration string, e.g. "500ms"
+}
+
 type Config struct {
 	Server     ServerConfig     `mapstructure:"server"`
 	Log        LogConfig        `mapstructure:"log"`
@@ -87,6 +93,7 @@ type Config struct {
 	Storage    StorageConfig    `mapstructure:"storage"`
 	Queue      QueueConfig      `mapstructure:"queue"`
 	Expression ExpressionConfig `mapstructure:"expression"`
+	Worker     WorkerConfig     `mapstructure:"worker"`
 }
 
 // Load reads and validates the config file.
@@ -131,6 +138,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("log.level", "info")
 	v.SetDefault("log.format", "json")
 	v.SetDefault("queue.workerCount", 2)
+	v.SetDefault("worker.defaultRetryCount", 3)
+	v.SetDefault("worker.defaultRetryDelay", "1s")
+	v.SetDefault("worker.pollBackoff", "500ms")
 }
 
 func unmarshalAndValidate(v *viper.Viper) (*Config, error) {

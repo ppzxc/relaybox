@@ -73,6 +73,9 @@ func (w *RelayWorker) processOne(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	if w.cfg.OnProcessed != nil {
+		defer w.cfg.OnProcessed()
+	}
 
 	rule, outputs, err := w.ruleReader.GetRule(ctx, string(msg.Input))
 	if err != nil {
@@ -205,7 +208,7 @@ func (w *RelayWorker) deliver(ctx context.Context, out domain.Output, payload []
 		retryCount = w.cfg.DefaultRetryCount
 	}
 	if delayMs <= 0 {
-		delayMs = w.cfg.DefaultRetryDelayMs
+		delayMs = int(w.cfg.DefaultRetryDelay.Milliseconds())
 	}
 	var lastErr error
 	for i := range retryCount {

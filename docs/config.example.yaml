@@ -80,3 +80,8 @@ queue:
   type: FILE
   path: "./data/queue"
   workerCount: 2
+
+worker:
+  defaultRetryCount: 3      # fallback retry count when output has no per-output retryCount
+  defaultRetryDelay: "1s"   # fallback base retry delay (Go duration string)
+  pollBackoff: "500ms"      # sleep duration between empty-queue polls
