@@ -27,6 +27,8 @@ import (
 	"relaybox/internal/domain"
 )
 
+var version = "dev"
+
 func main() {
 	if err := rootCmd().Execute(); err != nil {
 		os.Exit(1)
@@ -45,7 +47,7 @@ func rootCmd() *cobra.Command {
 	root.AddCommand(start)
 	root.AddCommand(&cobra.Command{
 		Use: "version", Short: "Print version",
-		Run: func(_ *cobra.Command, _ []string) { fmt.Println("relaybox v0.2.0") },
+		Run: func(_ *cobra.Command, _ []string) { fmt.Println("relaybox " + version) },
 	})
 	return root
 }
