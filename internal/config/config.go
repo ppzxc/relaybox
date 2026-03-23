@@ -75,7 +75,7 @@ type QueueConfig struct {
 }
 
 type ExpressionConfig struct {
-	DefaultEngine string `mapstructure:"defaultEngine"` // "cel" or "expr"
+	DefaultEngine string `mapstructure:"defaultEngine"` // "CEL" or "EXPR"
 }
 
 type WorkerConfig struct {
@@ -135,8 +135,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.port", 8080)
 	v.SetDefault("server.readTimeout", "30s")
 	v.SetDefault("server.writeTimeout", "30s")
-	v.SetDefault("log.level", "info")
-	v.SetDefault("log.format", "json")
+	v.SetDefault("log.level", "INFO")
+	v.SetDefault("log.format", "JSON")
 	v.SetDefault("queue.workerCount", 2)
 	v.SetDefault("worker.defaultRetryCount", 3)
 	v.SetDefault("worker.defaultRetryDelay", "1s")

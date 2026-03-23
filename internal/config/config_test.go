@@ -12,8 +12,8 @@ const testYAML = `
 server:
   port: 9090
 log:
-  level: debug
-  format: text
+  level: DEBUG
+  format: TEXT
 inputs:
   - id: beszel
     type: BESZEL
@@ -175,7 +175,7 @@ worker:
 func TestLoad_WithExpressionConfig(t *testing.T) {
 	yaml := `
 expression:
-  defaultEngine: expr
+  defaultEngine: EXPR
 inputs:
   - id: beszel
     type: BESZEL
@@ -186,7 +186,7 @@ outputs:
     url: https://example.com
 rules:
   - inputId: beszel
-    engine: expr
+    engine: EXPR
     filter: 'data.status == "CRITICAL"'
     mapping:
       severity: '"HIGH"'
@@ -204,11 +204,11 @@ queue:
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
-	if cfg.Expression.DefaultEngine != "expr" {
-		t.Errorf("defaultEngine = %q, want expr", cfg.Expression.DefaultEngine)
+	if cfg.Expression.DefaultEngine != "EXPR" {
+		t.Errorf("defaultEngine = %q, want EXPR", cfg.Expression.DefaultEngine)
 	}
-	if cfg.Rules[0].Engine != "expr" {
-		t.Errorf("rule engine = %q, want expr", cfg.Rules[0].Engine)
+	if cfg.Rules[0].Engine != "EXPR" {
+		t.Errorf("rule engine = %q, want EXPR", cfg.Rules[0].Engine)
 	}
 	if cfg.Rules[0].Filter != `data.status == "CRITICAL"` {
 		t.Errorf("filter = %q", cfg.Rules[0].Filter)
@@ -222,8 +222,8 @@ queue:
 	if err != nil {
 		t.Fatalf("GetRule error: %v", err)
 	}
-	if rule.Engine != "expr" {
-		t.Errorf("rule.Engine = %q, want expr", rule.Engine)
+	if rule.Engine != "EXPR" {
+		t.Errorf("rule.Engine = %q, want EXPR", rule.Engine)
 	}
 	if rule.Filter != `data.status == "CRITICAL"` {
 		t.Errorf("rule.Filter = %q", rule.Filter)
