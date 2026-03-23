@@ -11,7 +11,7 @@ PLATFORMS := linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 win
 build:
 	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BINARY) $(CMD)
 
-build-all:
+build-all: # NOTE: $(eval) inside $(foreach) is not safe with 'make -j'; run sequentially
 	@mkdir -p $(DIST)
 	$(foreach platform,$(PLATFORMS), \
 		$(eval GOOS   = $(word 1,$(subst /, ,$(platform)))) \
@@ -22,8 +22,9 @@ build-all:
 		echo "  built $(OUT)" && \
 	) true
 
-checksums:
-	@cd $(DIST) && sha256sum $(BINARY)-* > checksums.txt
+checksums: # NOTE: uses sha256sum (Linux/CI); on macOS install coreutils or use 'shasum -a 256'
+	@cd $(DIST) && sha256sum $(BINARY)-* > checksums.txt 2>/dev/null || \
+		shasum -a 256 $(BINARY)-* > checksums.txt
 	@echo "  checksums written to $(DIST)/checksums.txt"
 
 test:
