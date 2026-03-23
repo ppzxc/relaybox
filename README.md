@@ -1,94 +1,133 @@
+**English** | [한국어](README.ko.md)
+
 # relaybox
 
-범용 릴레이 허브: 어떤 인바운드 프로토콜/포맷도 수신하고, CEL/Expr 표현식 기반 필터·변환·라우팅 규칙을 통해 아웃바운드 채널로 전달한다.
+A generic relay hub: receives any inbound protocol/format, applies CEL/Expr expression-based filter, transform, and routing rules, then forwards messages to outbound channels.
 
 ```
-어떤 인바운드 (HTTP REST / WebSocket / TCP / ...)
+Any inbound (HTTP REST / WebSocket / TCP / ...)
         ↓
-  파서 파이프라인 (JSON / Form / XML / Logfmt / Regex)
+  Parser pipeline (JSON / Form / XML / Logfmt / Regex)
         ↓
-  CEL / Expr 표현식 필터 + 변환 + 라우팅
+  CEL / Expr expression filter + transform + routing
         ↓
-어떤 아웃바운드 (Webhook / Slack / Discord / ...)
+Any outbound (Webhook / ...)
 ```
 
-## 주요 기능
+## Features
 
-- **멀티 프로토콜 인바운드** — HTTP REST + WebSocket + TCP
-- **파서 파이프라인** — 입력별로 JSON, Form, XML, Logfmt, Regex 지원
-- **표현식 기반 라우팅** — 규칙별 CEL/Expr 필터, 매핑, 라우팅 조건
-- **at-least-once 전달** — 파일 큐 기반, 재시작 시에도 메시지 보존
-- **지수 백오프 재시도** — 채널별 `retryCount` / `retryDelayMs` 설정
-- **설정 핫리로드** — 재시작 없이 아웃풋 / 규칙 변경 가능
-- **Bearer 토큰 인증** — 입력별 독립 시크릿
+- **Multi-protocol inbound** — HTTP REST, WebSocket, TCP
+- **Parser pipeline** — JSON, Form, XML, Logfmt, Regex (with custom pattern) per input
+- **Expression-based routing** — per-input CEL/Expr filter, mapping, and routing rules
+- **At-least-once delivery** — file-queue backed; messages survive restarts
+- **Exponential backoff retry** — per-output `retryCount` / `retryDelayMs`
+- **Config hot-reload** — change outputs and rules without restarting
+- **Bearer token auth** — per-input independent secret
+- **Dot-notation templates** — produce nested JSON output via `parent.child` keys
 
-## 빠른 시작
+## Quick Start
 
-### 사전 요구 사항
+### Prerequisites
 
 - Go 1.25+
 
+### Build
+
 ```bash
-# 빌드
+# Clone and build
 go build -o relaybox ./cmd/server/
 
-# 설정 준비
+# Copy example config
 cp docs/config.example.yaml config.yaml
-# config.yaml 수정 후:
+# Edit config.yaml, then:
 
-# 서버 시작
+# Start server
 ./relaybox start --config config.yaml
 ```
 
-## 설정
+### Makefile
 
-`config.yaml` 예시:
+```bash
+# Build for current platform
+make build
+
+# Cross-compile all platforms (output to dist/)
+make build-all
+
+# Run tests
+make test
+
+# Full release build (clean + build-all + checksums)
+make release VERSION=1.0.0
+```
+
+## Configuration
+
+`config.yaml` example (see `docs/config.example.yaml` for full reference):
 
 ```yaml
 server:
   port: 8080
   readTimeout: 30s
   writeTimeout: 30s
+  tls:
+    enabled: false
+    certFile: ""
+    keyFile: ""
 
 log:
-  level: info    # debug | info | warn | error
-  format: json   # json | text
-
-expression:
-  defaultEngine: cel  # cel | expr
+  level: INFO    # DEBUG, INFO, WARN, ERROR
+  format: JSON   # JSON, TEXT
 
 inputs:
   - id: beszel
     type: BESZEL
-    parser: json      # json | form | xml | logfmt | regex
-    secret: "your-secret"
+    engine: CEL          # required — CEL or EXPR
+    parser: JSON         # JSON, FORM, XML, LOGFMT, REGEX
+    secret: "change-me"
+    rules:
+      # Rule 1: conditional routing
+      - filter: 'data.severity == "HIGH"'
+        mapping:
+          level: '"CRITICAL"'
+        routing:
+          - condition: 'data.level == "CRITICAL"'
+            outputIds: [ops-webhook]
+      # Rule 2: always forward (no filter)
+      - outputIds: [notify-bot]
+
   - id: tcp-input
     type: GENERIC
+    engine: CEL
     address: ":9001"
     delimiter: "\n"
-    parser: json
-    secret: ""        # TCP 입력은 시크릿 미사용
+    parser: JSON
+    rules:
+      - outputIds: [ops-webhook]   # simple: no filter, send all
 
 outputs:
   - id: ops-webhook
     type: WEBHOOK
+    engine: CEL          # required — CEL or EXPR
     url: "https://hooks.example.com/xyz"
     template:
       text: 'data.input + ": " + data.payload'
     retryCount: 3
     retryDelayMs: 1000
+    skipTLSVerify: false
 
-rules:
-  - inputId: beszel
-    engine: cel           # 규칙별 엔진 오버라이드
-    filter: 'data.input == "BESZEL"'
-    mapping:
-      severity: '"HIGH"'
-    routing:
-      - condition: 'data.severity == "HIGH"'
-        outputIds: [ops-webhook]
-  - inputId: tcp-input
-    outputIds: [ops-webhook]  # 단순: 필터/라우팅 없이 전체 전송
+  # Dot-notation keys produce nested JSON
+  - id: notify-bot
+    type: WEBHOOK
+    engine: CEL
+    url: "https://example.com/api/v1/bots/1/text"
+    secret: "bearer-token"   # sent as Authorization: Bearer <secret>
+    template:
+      content.type: '"text"'
+      content.text: 'data.input + " alert: " + data.payload'
+    retryCount: 3
+    retryDelayMs: 1000
+    timeoutSec: 10
 
 storage:
   type: SQLITE
@@ -98,48 +137,55 @@ queue:
   type: FILE
   path: "./data/queue"
   workerCount: 2
+
+worker:
+  defaultRetryCount: 3      # fallback when output has no retryCount
+  defaultRetryDelay: "1s"   # fallback base retry delay (Go duration)
+  pollBackoff: "500ms"      # sleep between empty-queue polls
 ```
 
-### 표현식 변수
+### Expression Variables
 
-모든 표현식(필터, 매핑, 라우팅, 템플릿)은 동일한 `data` 컨텍스트를 공유한다:
+All expressions (filter, mapping, routing, template) share the same `data` context:
 
-| 변수 | 설명 |
-|------|------|
-| `data.id` | 메시지 ULID |
-| `data.input` | 입력 타입 (`BESZEL`, `DOZZLE`, `GENERIC` 등) |
-| `data.payload` | 원본 페이로드 문자열 |
-| `data.createdAt` | 수신 타임스탬프 (RFC3339) |
-| `data.<field>` | `mapping` 표현식으로 추가된 필드 |
+| Variable | Description |
+|----------|-------------|
+| `data.id` | Message ULID |
+| `data.input` | Input type (`BESZEL`, `DOZZLE`, `GENERIC`, etc.) |
+| `data.payload` | Raw payload string |
+| `data.createdAt` | Receive timestamp (RFC3339) |
+| `data.<field>` | Fields added by `mapping` expressions |
 
-**필터** — 불리언 표현식; `false`이면 메시지 드롭:
+**Filter** — boolean expression; `false` drops the message:
 ```yaml
 filter: 'data.input == "BESZEL"'
 ```
 
-**매핑** — 계산된 필드로 `data` 보강:
+**Mapping** — enrich `data` with computed fields:
 ```yaml
 mapping:
   severity: '"HIGH"'
   label: 'data.input + "-alert"'
 ```
 
-**라우팅** — 조건부 아웃풋 선택 (매핑 이후 평가):
+**Routing** — conditional output selection (evaluated after mapping):
 ```yaml
 routing:
   - condition: 'data.severity == "HIGH"'
     outputIds: [ops-webhook]
 ```
 
-**템플릿** — 아웃풋 필드를 표현식으로 렌더링:
+**Template** — render output fields with expressions. Dot-notation keys generate nested JSON:
 ```yaml
 template:
   text: 'data.input + ": " + data.payload'
+  content.type: '"text"'
+  content.text: 'data.payload'
 ```
 
 ## API
 
-### 메시지 수신
+### Ingest Message
 
 ```
 POST /inputs/{inputId}/messages
@@ -149,58 +195,101 @@ Content-Type: application/json
 {"host": "server1", "status": "down"}
 ```
 
-응답 `201 Created`:
+Response `201 Created`:
 ```json
 {"id": "01J...", "status": "PENDING"}
 ```
+Header: `Location: /inputs/{inputId}/messages/{messageId}`
 
-### WebSocket 인바운드
+### WebSocket Inbound
 
 ```
 GET /inputs/{inputId}/messages/ws
 Authorization: Bearer <secret>
 ```
 
-연결 후 JSON 메시지를 전송하면 HTTP POST와 동일하게 처리된다.
+Send JSON messages over the connection; handled identically to HTTP POST.
 
-### TCP 인바운드
+### TCP Inbound
 
-설정한 `address`로 연결 후 개행(또는 커스텀 `delimiter`) 구분 메시지를 전송한다. 토큰 인증 없음 — 네트워크 정책으로 보안 적용.
+Connect to the configured `address` and send newline-delimited (or custom `delimiter`) messages. No token auth — secure via network policy.
 
-### 헬스 체크
+### Health Check
 
 ```
 GET /healthz
 → 200 OK
 ```
 
-모든 HTTP 응답에는 `X-API-Version` 헤더가 포함된다.
+### API Documentation
 
-## 아키텍처
+```
+GET /docs          → Redoc HTML UI
+GET /docs/openapi  → OpenAPI spec (JSON)
+GET /docs/asyncapi → AsyncAPI spec (JSON)
+```
 
-헥사고날 아키텍처(Ports & Adapters). 의존성 방향은 항상 도메인을 향해 안쪽으로만 흐른다.
+All HTTP responses include an `X-API-Version` header.
+
+## Architecture
+
+Hexagonal Architecture (Ports & Adapters). Dependencies always flow inward toward the domain.
 
 ```
 domain (0 deps)
   ↑
-application/port/{input,output}  ← 인터페이스 정의
+application/port/{input,output}  ← interface definitions
   ↑
-application/service              ← 비즈니스 로직
+application/service              ← business logic
   ↑
-adapter/{input,output}           ← 외부 세계와 연결
+adapter/{input,output}           ← external world
   ↑
-cmd/server/main.go               ← DI 조립, cobra CLI
+cmd/server/main.go               ← DI assembly, cobra CLI
 ```
 
-## 개발
+| Path | Role |
+|------|------|
+| `internal/domain/` | Entities (`Message`, `Output`), enums (`InputType`, `MessageStatus`, `OutputType`), sentinel errors |
+| `internal/application/port/input/` | `ReceiveMessageUseCase` interface |
+| `internal/application/port/output/` | `MessageRepository`, `MessageQueue`, `OutputSender`, `OutputRegistry`, `RuleConfigReader` interfaces |
+| `internal/application/service/` | `MessageService` (Receive), `RelayWorker` (Start) |
+| `internal/config/` | Viper-based YAML loader, `InMemoryRuleConfigReader`, hot-reload (`Watch`) |
+| `internal/adapter/input/http/` | chi router, RFC 7807 errors, `X-API-Version` middleware |
+| `internal/adapter/input/websocket/` | gorilla/websocket inbound handler |
+| `internal/adapter/output/sqlite/` | sqlc-based SQLite repository |
+| `internal/adapter/output/filequeue/` | File-based at-least-once queue |
+| `internal/adapter/output/webhook/` | HTTP Webhook sender |
+| `cmd/server/` | cobra `start` command, full DI assembly |
+| `test/e2e/` | End-to-end flow tests |
+
+## Release
+
+Push a version tag to trigger GitHub Actions — it builds all platform binaries and creates a GitHub Release automatically.
 
 ```bash
-# 전체 테스트 (race detector 포함)
+git tag 1.0.0
+git push origin 1.0.0
+```
+
+Supported platforms: `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, `windows/amd64`, `windows/arm64`
+
+Each release includes SHA256 checksums in `checksums.txt`.
+
+## Development
+
+```bash
+# Full test suite (with race detector)
 go test -race ./... -timeout 60s
 
-# 정적 분석
+# Static analysis
 go vet ./...
 
-# sqlc 코드 재생성 (SQL 변경 후)
+# Regenerate sqlc code (after SQL changes)
 cd internal/adapter/output/sqlite && sqlc generate
+
+# Build for current platform
+make build
+
+# Cross-compile all platforms
+make build-all
 ```
