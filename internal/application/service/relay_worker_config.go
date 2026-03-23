@@ -8,6 +8,7 @@ type RelayWorkerConfig struct {
 	DefaultRetryCount int
 	DefaultRetryDelay time.Duration
 	PollBackoff       time.Duration
+	OnProcessed       func() // called after each successfully dequeued message is processed; nil in production
 }
 
 // DefaultRelayWorkerConfig returns a config with the original hard-coded defaults.
