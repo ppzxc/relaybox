@@ -12,4 +12,5 @@ type MessageRepository interface {
 	UpdateDeliveryState(ctx context.Context, id string, status domain.MessageStatus, retryCount int, lastAttemptAt time.Time) error
 	FindByID(ctx context.Context, id string) (domain.Message, error)
 	FindByInput(ctx context.Context, inputID string, limit, offset int) ([]domain.Message, error)
+	DeleteOlderThan(ctx context.Context, cutoff time.Time, statuses []domain.MessageStatus) (int64, error)
 }

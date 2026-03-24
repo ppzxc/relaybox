@@ -4,17 +4,17 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
 	"relaybox/internal/adapter/output/sqlite/db"
+	output "relaybox/internal/application/port/output"
 	"relaybox/internal/domain"
 )
 
 // 컴파일 타임 인터페이스 검증
-var _ interface {
-	Save(context.Context, domain.Message) error
-} = (*Repository)(nil)
+var _ output.MessageRepository = (*Repository)(nil)
 
 type Repository struct {
 	queries *db.Queries
@@ -86,6 +86,35 @@ func (r *Repository) FindByInput(ctx context.Context, inputID string, limit, off
 	return messages, nil
 }
 
+func (r *Repository) DeleteOlderThan(ctx context.Context, cutoff time.Time, statuses []domain.MessageStatus) (int64, error) {
+	var query string
+	var args []any
+
+	if len(statuses) == 0 {
+		query = `DELETE FROM messages WHERE created_at < ?`
+		args = []any{cutoff.UTC()}
+	} else {
+		placeholders := strings.Repeat("?,", len(statuses))
+		placeholders = placeholders[:len(placeholders)-1] // trailing comma 제거
+		query = `DELETE FROM messages WHERE created_at < ? AND status IN (` + placeholders + `)`
+		args = make([]any, 0, 1+len(statuses))
+		args = append(args, cutoff.UTC())
+		for _, s := range statuses {
+			args = append(args, string(s))
+		}
+	}
+
+	result, err := r.sqlDB.ExecContext(ctx, query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("delete older than: %w", err)
+	}
+	n, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("rows affected: %w", err)
+	}
+	return n, nil
+}
+
 func toMessage(row db.Message) domain.Message {
 	m := domain.Message{
 		ID:         row.ID,
@@ -113,4 +142,5 @@ CREATE TABLE IF NOT EXISTS messages (
     status          TEXT NOT NULL DEFAULT 'PENDING',
     retry_count     INTEGER NOT NULL DEFAULT 0,
     last_attempt_at DATETIME
-);`
+);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);`

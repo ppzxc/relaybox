@@ -65,13 +65,24 @@ type RuleConfig struct {
 	Routing   []RouteConditionConfig `mapstructure:"routing"`
 }
 
+type RotationConfig struct {
+	Enabled   bool     `mapstructure:"enabled"`
+	Retention string   `mapstructure:"retention"` // Go duration, e.g. "720h"; must be positive
+	Interval  string   `mapstructure:"interval"`  // Go duration, e.g. "1h"; must be positive
+	// Statuses는 삭제 대상 메시지 상태 목록 (DELIVERED, FAILED, PENDING 허용).
+	// 비어있으면 모든 상태 삭제.
+	// 주의: PENDING 포함 시 아직 처리되지 않은 메시지도 삭제됨.
+	Statuses []string `mapstructure:"statuses"`
+}
+
 type StorageConfig struct {
-	Type            string `mapstructure:"type"`
-	Path            string `mapstructure:"path"`            // SQLite 파일 경로
-	DSN             string `mapstructure:"dsn"`             // MariaDB/MySQL DSN
-	MaxOpenConns    int    `mapstructure:"maxOpenConns"`
-	MaxIdleConns    int    `mapstructure:"maxIdleConns"`
-	ConnMaxLifetime string `mapstructure:"connMaxLifetime"` // Go duration, e.g. "5m"
+	Type            string         `mapstructure:"type"`
+	Path            string         `mapstructure:"path"`            // SQLite 파일 경로
+	DSN             string         `mapstructure:"dsn"`             // MariaDB/MySQL DSN
+	MaxOpenConns    int            `mapstructure:"maxOpenConns"`
+	MaxIdleConns    int            `mapstructure:"maxIdleConns"`
+	ConnMaxLifetime string         `mapstructure:"connMaxLifetime"` // Go duration, e.g. "5m"
+	Rotation        RotationConfig `mapstructure:"rotation"`
 }
 
 type QueueConfig struct {
@@ -141,6 +152,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("worker.defaultRetryCount", 3)
 	v.SetDefault("worker.defaultRetryDelay", "1s")
 	v.SetDefault("worker.pollBackoff", "500ms")
+	v.SetDefault("storage.rotation.enabled", false)
+	v.SetDefault("storage.rotation.retention", "720h")
+	v.SetDefault("storage.rotation.interval", "1h")
 }
 
 func unmarshalAndValidate(v *viper.Viper) (*Config, error) {
@@ -163,6 +177,29 @@ func validateConfig(cfg *Config) error {
 	if cfg.Storage.ConnMaxLifetime != "" {
 		if _, err := time.ParseDuration(cfg.Storage.ConnMaxLifetime); err != nil {
 			return fmt.Errorf("storage.connMaxLifetime: invalid duration %q: %w", cfg.Storage.ConnMaxLifetime, err)
+		}
+	}
+	if rot := cfg.Storage.Rotation; rot.Retention != "" {
+		d, err := time.ParseDuration(rot.Retention)
+		if err != nil {
+			return fmt.Errorf("rotation.retention: invalid duration %q: %w", rot.Retention, err)
+		}
+		if d <= 0 {
+			return fmt.Errorf("rotation.retention: must be positive, got %q", rot.Retention)
+		}
+	}
+	if rot := cfg.Storage.Rotation; rot.Interval != "" {
+		d, err := time.ParseDuration(rot.Interval)
+		if err != nil {
+			return fmt.Errorf("rotation.interval: invalid duration %q: %w", rot.Interval, err)
+		}
+		if d <= 0 {
+			return fmt.Errorf("rotation.interval: must be positive, got %q", rot.Interval)
+		}
+	}
+	for _, s := range cfg.Storage.Rotation.Statuses {
+		if s != "PENDING" && s != "DELIVERED" && s != "FAILED" {
+			return fmt.Errorf("rotation.statuses: invalid status %q (valid: PENDING, DELIVERED, FAILED)", s)
 		}
 	}
 

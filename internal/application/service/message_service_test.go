@@ -35,6 +35,9 @@ func (m *mockRepo) FindByID(_ context.Context, id string) (domain.Message, error
 func (m *mockRepo) FindByInput(_ context.Context, _ string, _, _ int) ([]domain.Message, error) {
 	return nil, nil
 }
+func (m *mockRepo) DeleteOlderThan(_ context.Context, _ time.Time, _ []domain.MessageStatus) (int64, error) {
+	return 0, nil
+}
 
 type mockQueue struct {
 	enqueueFn func(context.Context, domain.Message) error
