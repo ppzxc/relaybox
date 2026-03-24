@@ -16,24 +16,32 @@ import (
 var _ output.MessageRepository = (*Repository)(nil)
 
 type Repository struct {
-	sqlDB *sql.DB
+	sqlDB     *sql.DB
+	tableName string
 }
 
-func New(dsn string) (*Repository, error) {
+func New(dsn, tableName string) (*Repository, error) {
+	if tableName == "" {
+		tableName = "messages"
+	}
 	sqlDB, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open sqlite: %w", err)
 	}
-	if _, err := sqlDB.Exec(schemaSQL); err != nil {
+	if _, err := sqlDB.Exec(buildSchemaSQL(tableName)); err != nil {
 		return nil, fmt.Errorf("apply schema: %w", err)
 	}
-	return &Repository{sqlDB: sqlDB}, nil
+	return &Repository{sqlDB: sqlDB, tableName: tableName}, nil
 }
 
 func (r *Repository) Close() error { return r.sqlDB.Close() }
 
+func (r *Repository) buildSQL(query string) string {
+	return strings.ReplaceAll(query, "messages", r.tableName)
+}
+
 func (r *Repository) Save(ctx context.Context, m domain.Message) error {
-	_, err := r.sqlDB.ExecContext(ctx, sqlInsertMessage,
+	_, err := r.sqlDB.ExecContext(ctx, r.buildSQL(sqlInsertMessage),
 		m.ID,
 		int64(m.Version),
 		m.Input,
@@ -50,7 +58,7 @@ func (r *Repository) Save(ctx context.Context, m domain.Message) error {
 
 func (r *Repository) UpdateDeliveryState(ctx context.Context, id string, status domain.MessageStatus, retryCount int, lastAttemptAt time.Time) error {
 	t := lastAttemptAt.UTC()
-	_, err := r.sqlDB.ExecContext(ctx, sqlUpdateDeliveryState,
+	_, err := r.sqlDB.ExecContext(ctx, r.buildSQL(sqlUpdateDeliveryState),
 		string(status),
 		int64(retryCount),
 		sql.NullTime{Time: t, Valid: true},
@@ -63,7 +71,7 @@ func (r *Repository) UpdateDeliveryState(ctx context.Context, id string, status 
 }
 
 func (r *Repository) FindByID(ctx context.Context, id string) (domain.Message, error) {
-	row := r.sqlDB.QueryRowContext(ctx, sqlGetMessageByID, id)
+	row := r.sqlDB.QueryRowContext(ctx, r.buildSQL(sqlGetMessageByID), id)
 	m, err := scanMessage(row)
 	if err != nil {
 		return domain.Message{}, fmt.Errorf("find message %q: %w", id, err)
@@ -72,7 +80,7 @@ func (r *Repository) FindByID(ctx context.Context, id string) (domain.Message, e
 }
 
 func (r *Repository) FindByInput(ctx context.Context, inputID string, limit, offset int) ([]domain.Message, error) {
-	rows, err := r.sqlDB.QueryContext(ctx, sqlListMessagesByInput, inputID, int64(limit), int64(offset))
+	rows, err := r.sqlDB.QueryContext(ctx, r.buildSQL(sqlListMessagesByInput), inputID, int64(limit), int64(offset))
 	if err != nil {
 		return nil, fmt.Errorf("list messages: %w", err)
 	}
@@ -97,12 +105,12 @@ func (r *Repository) DeleteOlderThan(ctx context.Context, cutoff time.Time, stat
 	var args []any
 
 	if len(statuses) == 0 {
-		query = `DELETE FROM messages WHERE created_at < ?`
+		query = `DELETE FROM ` + r.tableName + ` WHERE created_at < ?`
 		args = []any{cutoff.UTC()}
 	} else {
 		placeholders := strings.Repeat("?,", len(statuses))
 		placeholders = placeholders[:len(placeholders)-1] // trailing comma 제거
-		query = `DELETE FROM messages WHERE created_at < ? AND status IN (` + placeholders + `)`
+		query = `DELETE FROM ` + r.tableName + ` WHERE created_at < ? AND status IN (` + placeholders + `)`
 		args = make([]any, 0, 1+len(statuses))
 		args = append(args, cutoff.UTC())
 		for _, s := range statuses {
@@ -208,7 +216,7 @@ FROM messages WHERE input=? ORDER BY created_at DESC LIMIT ? OFFSET ?`
 UPDATE messages SET status=?, retry_count=?, last_attempt_at=? WHERE id=?`
 )
 
-const schemaSQL = `
+const schemaTemplate = `
 CREATE TABLE IF NOT EXISTS messages (
     id              TEXT PRIMARY KEY,
     version         INTEGER NOT NULL DEFAULT 1,
@@ -220,3 +228,9 @@ CREATE TABLE IF NOT EXISTS messages (
     last_attempt_at DATETIME
 );
 CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);`
+
+func buildSchemaSQL(tableName string) string {
+	s := strings.ReplaceAll(schemaTemplate, "messages", tableName)
+	s = strings.ReplaceAll(s, "idx_"+tableName+"_created_at ON "+tableName, "idx_"+tableName+"_created_at ON "+tableName)
+	return s
+}

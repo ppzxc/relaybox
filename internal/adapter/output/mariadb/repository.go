@@ -21,15 +21,22 @@ type Config struct {
 	MaxOpenConns    int
 	MaxIdleConns    int
 	ConnMaxLifetime time.Duration
+	TableName       string
 }
 
 // Repository implements port/output.MessageRepository for MariaDB.
 type Repository struct {
-	sqlDB *sql.DB
+	sqlDB     *sql.DB
+	tableName string
 }
 
 // New opens a MariaDB connection, applies connection pool settings, and creates the schema.
 func New(cfg Config) (*Repository, error) {
+	tableName := cfg.TableName
+	if tableName == "" {
+		tableName = "messages"
+	}
+
 	dsn := ensureParseTime(cfg.DSN)
 
 	sqlDB, err := sql.Open("mysql", dsn)
@@ -52,17 +59,21 @@ func New(cfg Config) (*Repository, error) {
 		sqlDB.SetConnMaxLifetime(cfg.ConnMaxLifetime)
 	}
 
-	if _, err := sqlDB.Exec(schemaSQL); err != nil {
+	if _, err := sqlDB.Exec(buildSchemaSQL(tableName)); err != nil {
 		sqlDB.Close()
 		return nil, fmt.Errorf("apply schema: %w", err)
 	}
-	return &Repository{sqlDB: sqlDB}, nil
+	return &Repository{sqlDB: sqlDB, tableName: tableName}, nil
 }
 
 func (r *Repository) Close() error { return r.sqlDB.Close() }
 
+func (r *Repository) buildSQL(query string) string {
+	return strings.ReplaceAll(query, "messages", r.tableName)
+}
+
 func (r *Repository) Save(ctx context.Context, m domain.Message) error {
-	_, err := r.sqlDB.ExecContext(ctx, sqlInsertMessage,
+	_, err := r.sqlDB.ExecContext(ctx, r.buildSQL(sqlInsertMessage),
 		m.ID,
 		int32(m.Version),
 		m.Input,
@@ -79,7 +90,7 @@ func (r *Repository) Save(ctx context.Context, m domain.Message) error {
 
 func (r *Repository) UpdateDeliveryState(ctx context.Context, id string, status domain.MessageStatus, retryCount int, lastAttemptAt time.Time) error {
 	t := lastAttemptAt.UTC()
-	_, err := r.sqlDB.ExecContext(ctx, sqlUpdateDeliveryState,
+	_, err := r.sqlDB.ExecContext(ctx, r.buildSQL(sqlUpdateDeliveryState),
 		string(status),
 		int32(retryCount),
 		sql.NullTime{Time: t, Valid: true},
@@ -92,7 +103,7 @@ func (r *Repository) UpdateDeliveryState(ctx context.Context, id string, status 
 }
 
 func (r *Repository) FindByID(ctx context.Context, id string) (domain.Message, error) {
-	row := r.sqlDB.QueryRowContext(ctx, sqlGetMessageByID, id)
+	row := r.sqlDB.QueryRowContext(ctx, r.buildSQL(sqlGetMessageByID), id)
 	m, err := scanMessage(row)
 	if err != nil {
 		return domain.Message{}, fmt.Errorf("find message %q: %w", id, err)
@@ -101,7 +112,7 @@ func (r *Repository) FindByID(ctx context.Context, id string) (domain.Message, e
 }
 
 func (r *Repository) FindByInput(ctx context.Context, inputID string, limit, offset int) ([]domain.Message, error) {
-	rows, err := r.sqlDB.QueryContext(ctx, sqlListMessagesByInput, inputID, int32(limit), int32(offset))
+	rows, err := r.sqlDB.QueryContext(ctx, r.buildSQL(sqlListMessagesByInput), inputID, int32(limit), int32(offset))
 	if err != nil {
 		return nil, fmt.Errorf("list messages: %w", err)
 	}
@@ -126,12 +137,12 @@ func (r *Repository) DeleteOlderThan(ctx context.Context, cutoff time.Time, stat
 	var args []any
 
 	if len(statuses) == 0 {
-		query = `DELETE FROM messages WHERE created_at < ?`
+		query = `DELETE FROM ` + r.tableName + ` WHERE created_at < ?`
 		args = []any{cutoff.UTC()}
 	} else {
 		placeholders := strings.Repeat("?,", len(statuses))
 		placeholders = placeholders[:len(placeholders)-1]
-		query = `DELETE FROM messages WHERE created_at < ? AND status IN (` + placeholders + `)`
+		query = `DELETE FROM ` + r.tableName + ` WHERE created_at < ? AND status IN (` + placeholders + `)`
 		args = make([]any, 0, 1+len(statuses))
 		args = append(args, cutoff.UTC())
 		for _, s := range statuses {
@@ -249,7 +260,7 @@ FROM messages WHERE input=? ORDER BY created_at DESC LIMIT ? OFFSET ?`
 UPDATE messages SET status=?, retry_count=?, last_attempt_at=? WHERE id=?`
 )
 
-const schemaSQL = `
+const schemaTemplate = `
 CREATE TABLE IF NOT EXISTS messages (
     id              VARCHAR(255) PRIMARY KEY,
     version         INT NOT NULL DEFAULT 1,
@@ -262,3 +273,11 @@ CREATE TABLE IF NOT EXISTS messages (
     INDEX idx_messages_input (input),
     INDEX idx_messages_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`
+
+func buildSchemaSQL(tableName string) string {
+	s := strings.ReplaceAll(schemaTemplate, "messages", tableName)
+	// Fix index names: idx_messages_input -> idx_{tableName}_input
+	s = strings.ReplaceAll(s, "idx_"+tableName+"_input", "idx_"+tableName+"_input")
+	s = strings.ReplaceAll(s, "idx_"+tableName+"_created_at", "idx_"+tableName+"_created_at")
+	return s
+}
