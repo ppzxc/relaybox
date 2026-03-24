@@ -69,7 +69,7 @@ func TestRepository_FindByInput(t *testing.T) {
 	for _, id := range []string{"a1", "a2", "a3"} {
 		repo.Save(ctx, domain.Message{ID: id, Input: "beszel", Payload: domain.RawPayload(`{}`), Status: domain.MessageStatusPending, Version: 1})
 	}
-	messages, err := repo.FindByInput(ctx, string("beszel"), 10, 0)
+	messages, err := repo.FindByInput(ctx, "beszel", 10, 0)
 	if err != nil {
 		t.Fatalf("FindByInput() error: %v", err)
 	}

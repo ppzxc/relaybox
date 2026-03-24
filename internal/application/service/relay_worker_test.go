@@ -446,7 +446,7 @@ func TestRelayWorker_Routing_MatchesCorrectOutputs(t *testing.T) {
 			Rule: domain.Rule{
 				Routing: []domain.RouteCondition{
 					{Condition: `data.input == "beszel"`, OutputIDs: []string{"c1"}},
-					{Condition: `data.input == "DOZZLE"`, OutputIDs: []string{"c2"}},
+					{Condition: `data.input == "dozzle"`, OutputIDs: []string{"c2"}},
 				},
 			},
 			Outputs: []domain.Output{
