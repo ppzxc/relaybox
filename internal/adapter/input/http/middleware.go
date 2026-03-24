@@ -15,12 +15,12 @@ import (
 type contextKey string
 
 const (
-	traceIDKey   contextKey = "traceID"
-	inputTypeKey contextKey = "inputType"
+	traceIDKey  contextKey = "traceID"
+	inputIDKey  contextKey = "inputID"
 )
 
-func inputTypeFromContext(ctx context.Context) domain.InputType {
-	v, ok := ctx.Value(inputTypeKey).(domain.InputType)
+func inputIDFromContext(ctx context.Context) string {
+	v, ok := ctx.Value(inputIDKey).(string)
 	if !ok {
 		panic("inputAuthMiddleware not applied: inputType missing from context")
 	}
@@ -41,12 +41,12 @@ func inputAuthMiddleware(resolver input.InputResolver) func(http.Handler) http.H
 					fmt.Sprintf("invalid or missing token for input: %s", inputID))
 				return
 			}
-			inputType, err := resolver.Resolve(inputID)
+			resolvedID, err := resolver.Resolve(inputID)
 			if err != nil {
 				mapError(w, r, err)
 				return
 			}
-			ctx := context.WithValue(r.Context(), inputTypeKey, inputType)
+			ctx := context.WithValue(r.Context(), inputIDKey, resolvedID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

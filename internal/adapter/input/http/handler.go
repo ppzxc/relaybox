@@ -24,7 +24,7 @@ func NewHandler(receiveUC input.ReceiveMessageUseCase, getUC input.GetMessageUse
 
 func (h *Handler) PostMessage(w http.ResponseWriter, r *http.Request) {
 	inputID := chi.URLParam(r, "inputId")
-	inputType := inputTypeFromContext(r.Context())
+	resolvedInputID := inputIDFromContext(r.Context())
 
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1MB
 	body, err := io.ReadAll(r.Body)
@@ -38,7 +38,7 @@ func (h *Handler) PostMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	messageID, err := h.receiveUC.Receive(r.Context(), inputType, r.Header.Get("Content-Type"), body)
+	messageID, err := h.receiveUC.Receive(r.Context(), resolvedInputID, r.Header.Get("Content-Type"), body)
 	if err != nil {
 		mapError(w, r, err)
 		return

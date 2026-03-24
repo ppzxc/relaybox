@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"relaybox/internal/domain"
 )
 
 // mockReceiveUseCase records calls to Receive.
@@ -20,12 +19,12 @@ type mockReceiveUseCase struct {
 }
 
 type receiveCall struct {
-	inputType   domain.InputType
+	inputType   string
 	contentType string
 	body        []byte
 }
 
-func (m *mockReceiveUseCase) Receive(_ context.Context, inputType domain.InputType, contentType string, body []byte) (string, error) {
+func (m *mockReceiveUseCase) Receive(_ context.Context, inputType string, contentType string, body []byte) (string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	cp := make([]byte, len(body))
@@ -51,7 +50,7 @@ func startTestListener(t *testing.T, delimiter byte, contentType string, mock *m
 	addr = ln.Addr().String()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	listener := NewListener(mock, domain.InputTypeGeneric, ":0", delimiter, contentType)
+	listener := NewListener(mock, "generic", ":0", delimiter, contentType)
 
 	errCh := make(chan error, 1)
 	go func() {
@@ -108,8 +107,8 @@ func TestListener_BasicMessageDelivery(t *testing.T) {
 	if string(calls[0].body) != "hello" {
 		t.Errorf("body = %q, want %q", calls[0].body, "hello")
 	}
-	if calls[0].inputType != domain.InputTypeGeneric {
-		t.Errorf("inputType = %q, want %q", calls[0].inputType, domain.InputTypeGeneric)
+	if calls[0].inputType != "generic" {
+		t.Errorf("inputType = %q, want %q", calls[0].inputType, "generic")
 	}
 	if calls[0].contentType != "application/json" {
 		t.Errorf("contentType = %q, want %q", calls[0].contentType, "application/json")
@@ -179,7 +178,7 @@ func TestListener_GracefulShutdown(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	listener := NewListener(mock, domain.InputTypeGeneric, ":0", '\n', "application/json")
+	listener := NewListener(mock, "generic", ":0", '\n', "application/json")
 
 	errCh := make(chan error, 1)
 	go func() {

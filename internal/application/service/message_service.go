@@ -20,14 +20,14 @@ var _ input.GetMessageUseCase = (*MessageService)(nil)
 type MessageService struct {
 	repo        output.MessageRepository
 	queue       output.MessageQueue
-	parserTypes map[domain.InputType]string
+	parserTypes map[string]string
 	registry    input.ParserRegistry
 }
 
 func NewMessageService(
 	repo output.MessageRepository,
 	queue output.MessageQueue,
-	parserTypes map[domain.InputType]string,
+	parserTypes map[string]string,
 	registry input.ParserRegistry,
 ) *MessageService {
 	return &MessageService{
@@ -46,12 +46,12 @@ func (s *MessageService) GetByID(ctx context.Context, id string) (domain.Message
 	return msg, nil
 }
 
-func (s *MessageService) Receive(ctx context.Context, inputType domain.InputType, contentType string, body []byte) (string, error) {
+func (s *MessageService) Receive(ctx context.Context, inputID string, contentType string, body []byte) (string, error) {
 	id := ulid.MustNew(ulid.Timestamp(time.Now()), rand.Reader).String()
 	msg := domain.Message{
 		ID:        id,
 		Version:   1,
-		Input:     inputType,
+		Input:     inputID,
 		Payload:   domain.RawPayload(body),
 		CreatedAt: time.Now().UTC(),
 		Status:    domain.MessageStatusPending,
@@ -59,17 +59,17 @@ func (s *MessageService) Receive(ctx context.Context, inputType domain.InputType
 
 	// Parse body if a parser is configured for this input type
 	if s.parserTypes != nil && s.registry != nil {
-		if parserType, ok := s.parserTypes[inputType]; ok && parserType != "" {
+		if parserType, ok := s.parserTypes[inputID]; ok && parserType != "" {
 			if parser, err := s.registry.Get(parserType); err == nil {
 				if parsed, err := parser.Parse(contentType, body); err == nil {
 					msg.ParsedData = parsed
 				} else {
 					slog.Warn("parser failed, storing raw payload only",
-						"input", inputType, "parser", parserType, "err", err)
+						"input", inputID, "parser", parserType, "err", err)
 				}
 			} else {
 				slog.Warn("parser not found, storing raw payload only",
-					"input", inputType, "parser", parserType, "err", err)
+					"input", inputID, "parser", parserType, "err", err)
 			}
 		}
 	}

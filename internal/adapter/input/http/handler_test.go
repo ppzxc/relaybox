@@ -13,19 +13,19 @@ import (
 )
 
 type mockUseCase struct {
-	receiveFn func(context.Context, domain.InputType, string, []byte) (string, error)
+	receiveFn func(context.Context, string, string, []byte) (string, error)
 }
 
-func (m *mockUseCase) Receive(ctx context.Context, s domain.InputType, contentType string, p []byte) (string, error) {
+func (m *mockUseCase) Receive(ctx context.Context, s string, contentType string, p []byte) (string, error) {
 	return m.receiveFn(ctx, s, contentType, p)
 }
 
 type mockResolver struct {
-	inputs  map[string]domain.InputType
+	inputs  map[string]string
 	secrets map[string]string
 }
 
-func (m *mockResolver) Resolve(inputID string) (domain.InputType, error) {
+func (m *mockResolver) Resolve(inputID string) (string, error) {
 	st, ok := m.inputs[inputID]
 	if !ok {
 		return "", domain.ErrInputNotFound
@@ -48,18 +48,18 @@ func (m *mockGetUseCase) GetByID(ctx context.Context, id string) (domain.Message
 	return domain.Message{}, domain.ErrMessageNotFound
 }
 
-func newTestRouter(receiveFn func(context.Context, domain.InputType, string, []byte) (string, error), getByIDFn func(context.Context, string) (domain.Message, error)) http.Handler {
+func newTestRouter(receiveFn func(context.Context, string, string, []byte) (string, error), getByIDFn func(context.Context, string) (domain.Message, error)) http.Handler {
 	uc := &mockUseCase{receiveFn: receiveFn}
 	getUC := &mockGetUseCase{getByIDFn: getByIDFn}
 	resolver := &mockResolver{
-		inputs:  map[string]domain.InputType{"beszel": domain.InputTypeBeszel},
+		inputs:  map[string]string{"beszel": "beszel"},
 		secrets: map[string]string{"beszel": "test-token"},
 	}
 	return httpadapter.NewRouter(uc, getUC, resolver, nil)
 }
 
 func TestHandler_PostMessage_Success(t *testing.T) {
-	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
+	router := newTestRouter(func(_ context.Context, _ string, _ string, _ []byte) (string, error) {
 		return "01JTEST00000000000000000", nil
 	}, nil)
 	req := httptest.NewRequest(http.MethodPost, "/inputs/beszel/messages", strings.NewReader(`{"level":"critical"}`))
@@ -86,7 +86,7 @@ func TestHandler_PostMessage_Success(t *testing.T) {
 }
 
 func TestHandler_PostMessage_InvalidToken(t *testing.T) {
-	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
+	router := newTestRouter(func(_ context.Context, _ string, _ string, _ []byte) (string, error) {
 		return "", nil
 	}, nil)
 	req := httptest.NewRequest(http.MethodPost, "/inputs/beszel/messages", strings.NewReader(`{}`))
@@ -104,7 +104,7 @@ func TestHandler_PostMessage_InvalidToken(t *testing.T) {
 }
 
 func TestHandler_Healthz(t *testing.T) {
-	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
+	router := newTestRouter(func(_ context.Context, _ string, _ string, _ []byte) (string, error) {
 		return "", nil
 	}, nil)
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
@@ -117,9 +117,9 @@ func TestHandler_Healthz(t *testing.T) {
 
 // allowAllResolver는 ValidateToken이 항상 true를 반환하는 취약한 구현을 모사한다.
 // handler가 ValidateToken에 의존하지 않고 빈 토큰을 직접 거부하는지 검증하기 위해 사용한다.
-type allowAllResolver struct{ inputs map[string]domain.InputType }
+type allowAllResolver struct{ inputs map[string]string }
 
-func (a *allowAllResolver) Resolve(id string) (domain.InputType, error) {
+func (a *allowAllResolver) Resolve(id string) (string, error) {
 	st, ok := a.inputs[id]
 	if !ok {
 		return "", domain.ErrInputNotFound
@@ -131,10 +131,10 @@ func (a *allowAllResolver) ValidateToken(_, _ string) bool { return true }
 func TestHandler_PostMessage_EmptyToken(t *testing.T) {
 	// ValidateToken이 항상 true인 resolver를 사용하여,
 	// handler 레이어에서 빈 토큰을 명시적으로 거부해야 함을 검증한다.
-	uc := &mockUseCase{receiveFn: func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
+	uc := &mockUseCase{receiveFn: func(_ context.Context, _ string, _ string, _ []byte) (string, error) {
 		return "id", nil
 	}}
-	resolver := &allowAllResolver{inputs: map[string]domain.InputType{"beszel": domain.InputTypeBeszel}}
+	resolver := &allowAllResolver{inputs: map[string]string{"beszel": "beszel"}}
 	router := httpadapter.NewRouter(uc, &mockGetUseCase{}, resolver, nil)
 
 	tests := []struct {
@@ -160,7 +160,7 @@ func TestHandler_PostMessage_EmptyToken(t *testing.T) {
 }
 
 func TestHandler_PostMessage_BodyTooLarge(t *testing.T) {
-	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
+	router := newTestRouter(func(_ context.Context, _ string, _ string, _ []byte) (string, error) {
 		return "id", nil
 	}, nil)
 	// 1MB + 1byte 초과 요청
@@ -178,7 +178,7 @@ func TestHandler_PostMessage_BodyTooLarge(t *testing.T) {
 }
 
 func TestHandler_InputNotFound(t *testing.T) {
-	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
+	router := newTestRouter(func(_ context.Context, _ string, _ string, _ []byte) (string, error) {
 		return "", domain.ErrInputNotFound
 	}, nil)
 	req := httptest.NewRequest(http.MethodPost, "/inputs/unknown/messages", strings.NewReader(`{}`))
@@ -192,7 +192,7 @@ func TestHandler_InputNotFound(t *testing.T) {
 }
 
 func TestWebSocketEndpoint_NoToken_Returns401(t *testing.T) {
-	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
+	router := newTestRouter(func(_ context.Context, _ string, _ string, _ []byte) (string, error) {
 		return "id", nil
 	}, nil)
 
@@ -219,7 +219,7 @@ func TestWebSocketEndpoint_NoToken_Returns401(t *testing.T) {
 }
 
 func TestDocs_OpenAPI(t *testing.T) {
-	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
+	router := newTestRouter(func(_ context.Context, _ string, _ string, _ []byte) (string, error) {
 		return "", nil
 	}, nil)
 	req := httptest.NewRequest(http.MethodGet, "/docs/openapi", nil)
@@ -238,7 +238,7 @@ func TestDocs_OpenAPI(t *testing.T) {
 }
 
 func TestDocs_AsyncAPI(t *testing.T) {
-	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
+	router := newTestRouter(func(_ context.Context, _ string, _ string, _ []byte) (string, error) {
 		return "", nil
 	}, nil)
 	req := httptest.NewRequest(http.MethodGet, "/docs/asyncapi", nil)
@@ -259,11 +259,11 @@ func TestDocs_AsyncAPI(t *testing.T) {
 func TestHandler_GetMessage_Success(t *testing.T) {
 	want := domain.Message{
 		ID:     "msg-1",
-		Input:  domain.InputTypeBeszel,
+		Input:  "beszel",
 		Status: domain.MessageStatusPending,
 	}
 	router := newTestRouter(
-		func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
+		func(_ context.Context, _ string, _ string, _ []byte) (string, error) {
 			return "", nil
 		},
 		func(_ context.Context, id string) (domain.Message, error) {
@@ -292,7 +292,7 @@ func TestHandler_GetMessage_Success(t *testing.T) {
 
 func TestHandler_GetMessage_NotFound(t *testing.T) {
 	router := newTestRouter(
-		func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
+		func(_ context.Context, _ string, _ string, _ []byte) (string, error) {
 			return "", nil
 		},
 		func(_ context.Context, id string) (domain.Message, error) {
@@ -311,7 +311,7 @@ func TestHandler_GetMessage_NotFound(t *testing.T) {
 
 func TestHandler_GetMessage_NoAuth(t *testing.T) {
 	router := newTestRouter(
-		func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
+		func(_ context.Context, _ string, _ string, _ []byte) (string, error) {
 			return "", nil
 		},
 		nil,
@@ -327,7 +327,7 @@ func TestHandler_GetMessage_NoAuth(t *testing.T) {
 }
 
 func TestDocs_HTML(t *testing.T) {
-	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
+	router := newTestRouter(func(_ context.Context, _ string, _ string, _ []byte) (string, error) {
 		return "", nil
 	}, nil)
 	req := httptest.NewRequest(http.MethodGet, "/docs", nil)

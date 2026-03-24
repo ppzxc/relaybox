@@ -22,7 +22,7 @@ func (r *RawPayload) UnmarshalJSON(b []byte) error {
 type Message struct {
 	ID            string         `json:"id"`
 	Version       int            `json:"version"`
-	Input         InputType      `json:"input"`
+	Input         string         `json:"input"`
 	Payload       RawPayload     `json:"payload"`
 	// ParsedData is populated at parse time from the raw Payload.
 	// It is intentionally not persisted to SQLite — only stored in the file queue via JSON.

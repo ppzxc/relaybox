@@ -16,7 +16,7 @@ type inputEntry struct {
 // InMemoryRuleConfigReader implements output.RuleConfigReader.
 type InMemoryRuleConfigReader struct {
 	mu     sync.RWMutex
-	inputs map[string]inputEntry // keyed by input type (e.g. "BESZEL")
+	inputs map[string]inputEntry // keyed by input ID
 }
 
 func NewInMemoryRuleConfigReader(cfg *Config) *InMemoryRuleConfigReader {
@@ -38,10 +38,7 @@ func (r *InMemoryRuleConfigReader) Update(cfg *Config) {
 
 	inputs := make(map[string]inputEntry, len(cfg.Inputs))
 	for _, inp := range cfg.Inputs {
-		key := inp.Type // keyed by input type (e.g. "BESZEL")
-		if key == "" {
-			key = inp.ID // fallback
-		}
+		key := inp.ID
 
 		entries := make([]domain.RuleEntry, 0, len(inp.Rules))
 		for _, rc := range inp.Rules {
@@ -90,13 +87,13 @@ func (r *InMemoryRuleConfigReader) Update(cfg *Config) {
 	r.mu.Unlock()
 }
 
-// GetRules returns the input engine and rule entries for a given input type.
-func (r *InMemoryRuleConfigReader) GetRules(_ context.Context, inputType string) (string, []domain.RuleEntry, error) {
+// GetRules returns the input engine and rule entries for a given input ID.
+func (r *InMemoryRuleConfigReader) GetRules(_ context.Context, inputID string) (string, []domain.RuleEntry, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	entry, ok := r.inputs[inputType]
+	entry, ok := r.inputs[inputID]
 	if !ok {
-		return "", nil, fmt.Errorf("rules for %q: %w", inputType, domain.ErrInputNotFound)
+		return "", nil, fmt.Errorf("rules for %q: %w", inputID, domain.ErrInputNotFound)
 	}
 	return entry.engine, entry.entries, nil
 }

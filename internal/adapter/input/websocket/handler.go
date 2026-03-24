@@ -7,7 +7,6 @@ import (
 
 	"github.com/gorilla/websocket"
 	"relaybox/internal/application/port/input"
-	"relaybox/internal/domain"
 )
 
 type Handler struct {
@@ -36,7 +35,7 @@ func sameHostOrigin(r *http.Request) bool {
 	return u.Host == r.Host
 }
 
-func (h *Handler) ServeWS(w http.ResponseWriter, r *http.Request, inputType domain.InputType) {
+func (h *Handler) ServeWS(w http.ResponseWriter, r *http.Request, inputID string) {
 	conn, err := h.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		slog.Warn("ws upgrade failed", "err", err)
@@ -48,12 +47,12 @@ func (h *Handler) ServeWS(w http.ResponseWriter, r *http.Request, inputType doma
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseNormalClosure) {
-				slog.Warn("ws read error", "input", inputType, "err", err)
+				slog.Warn("ws read error", "input", inputID, "err", err)
 			}
 			return
 		}
-		if _, err := h.uc.Receive(r.Context(), inputType, "application/json", msg); err != nil {
-			slog.Warn("receive via ws failed", "input", inputType, "err", err)
+		if _, err := h.uc.Receive(r.Context(), inputID, "application/json", msg); err != nil {
+			slog.Warn("receive via ws failed", "input", inputID, "err", err)
 		}
 	}
 }
