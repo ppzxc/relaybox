@@ -80,8 +80,9 @@ func TestGenerateSecret_DefaultLength(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(s) == 0 {
-		t.Fatal("expected non-empty secret")
+	// 32 bytes → base64url without padding = ceil(32*4/3) = 43 chars
+	if len(s) != 43 {
+		t.Errorf("secret length = %d, want 43", len(s))
 	}
 }
 
