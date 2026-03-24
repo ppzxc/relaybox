@@ -67,9 +67,12 @@ type RuleConfig struct {
 
 type RotationConfig struct {
 	Enabled   bool     `mapstructure:"enabled"`
-	Retention string   `mapstructure:"retention"` // Go duration, e.g. "720h"
-	Interval  string   `mapstructure:"interval"`  // Go duration, e.g. "1h"
-	Statuses  []string `mapstructure:"statuses"`  // e.g. ["DELIVERED","FAILED"]; 비어있으면 전체
+	Retention string   `mapstructure:"retention"` // Go duration, e.g. "720h"; must be positive
+	Interval  string   `mapstructure:"interval"`  // Go duration, e.g. "1h"; must be positive
+	// Statuses는 삭제 대상 메시지 상태 목록 (DELIVERED, FAILED, PENDING 허용).
+	// 비어있으면 모든 상태 삭제.
+	// 주의: PENDING 포함 시 아직 처리되지 않은 메시지도 삭제됨.
+	Statuses []string `mapstructure:"statuses"`
 }
 
 type StorageConfig struct {
@@ -176,21 +179,27 @@ func validateConfig(cfg *Config) error {
 			return fmt.Errorf("storage.connMaxLifetime: invalid duration %q: %w", cfg.Storage.ConnMaxLifetime, err)
 		}
 	}
-	if rot := cfg.Storage.Rotation; rot.Enabled || rot.Retention != "" || rot.Interval != "" {
-		if rot.Retention != "" {
-			if _, err := time.ParseDuration(rot.Retention); err != nil {
-				return fmt.Errorf("rotation.retention: invalid duration %q: %w", rot.Retention, err)
-			}
+	if rot := cfg.Storage.Rotation; rot.Retention != "" {
+		d, err := time.ParseDuration(rot.Retention)
+		if err != nil {
+			return fmt.Errorf("rotation.retention: invalid duration %q: %w", rot.Retention, err)
 		}
-		if rot.Interval != "" {
-			if _, err := time.ParseDuration(rot.Interval); err != nil {
-				return fmt.Errorf("rotation.interval: invalid duration %q: %w", rot.Interval, err)
-			}
+		if d <= 0 {
+			return fmt.Errorf("rotation.retention: must be positive, got %q", rot.Retention)
 		}
-		for _, s := range rot.Statuses {
-			if s != "PENDING" && s != "DELIVERED" && s != "FAILED" {
-				return fmt.Errorf("rotation.statuses: invalid status %q (valid: PENDING, DELIVERED, FAILED)", s)
-			}
+	}
+	if rot := cfg.Storage.Rotation; rot.Interval != "" {
+		d, err := time.ParseDuration(rot.Interval)
+		if err != nil {
+			return fmt.Errorf("rotation.interval: invalid duration %q: %w", rot.Interval, err)
+		}
+		if d <= 0 {
+			return fmt.Errorf("rotation.interval: must be positive, got %q", rot.Interval)
+		}
+	}
+	for _, s := range cfg.Storage.Rotation.Statuses {
+		if s != "PENDING" && s != "DELIVERED" && s != "FAILED" {
+			return fmt.Errorf("rotation.statuses: invalid status %q (valid: PENDING, DELIVERED, FAILED)", s)
 		}
 	}
 

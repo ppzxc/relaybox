@@ -60,7 +60,9 @@ func TestRepository_DeleteOlderThan_AllStatuses(t *testing.T) {
 		{ID: "new-1", Input: "x", Payload: domain.RawPayload(`{}`), Version: 1, CreatedAt: now, Status: domain.MessageStatusDelivered},
 	}
 	for _, m := range msgs {
-		repo.Save(ctx, m)
+		if err := repo.Save(ctx, m); err != nil {
+			t.Fatalf("Save(%s) error: %v", m.ID, err)
+		}
 	}
 
 	// 빈 statuses → 모든 상태 삭제

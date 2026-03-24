@@ -9,13 +9,12 @@ import (
 
 	_ "modernc.org/sqlite"
 	"relaybox/internal/adapter/output/sqlite/db"
+	output "relaybox/internal/application/port/output"
 	"relaybox/internal/domain"
 )
 
 // 컴파일 타임 인터페이스 검증
-var _ interface {
-	Save(context.Context, domain.Message) error
-} = (*Repository)(nil)
+var _ output.MessageRepository = (*Repository)(nil)
 
 type Repository struct {
 	queries *db.Queries

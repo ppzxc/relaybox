@@ -453,3 +453,39 @@ storage:
 		t.Errorf("error should mention rotation.statuses, got: %v", err)
 	}
 }
+
+func TestLoad_RotationConfig_ZeroRetention(t *testing.T) {
+	yaml := rotationBaseYAML + `
+storage:
+  type: SQLITE
+  path: ./data/test.db
+  rotation:
+    enabled: true
+    retention: "0s"
+`
+	_, err := config.Load(writeConfig(t, yaml))
+	if err == nil {
+		t.Fatal("expected error for zero rotation.retention")
+	}
+	if !strings.Contains(err.Error(), "rotation.retention") {
+		t.Errorf("error should mention rotation.retention, got: %v", err)
+	}
+}
+
+func TestLoad_RotationConfig_ZeroInterval(t *testing.T) {
+	yaml := rotationBaseYAML + `
+storage:
+  type: SQLITE
+  path: ./data/test.db
+  rotation:
+    enabled: true
+    interval: "0s"
+`
+	_, err := config.Load(writeConfig(t, yaml))
+	if err == nil {
+		t.Fatal("expected error for zero rotation.interval")
+	}
+	if !strings.Contains(err.Error(), "rotation.interval") {
+		t.Errorf("error should mention rotation.interval, got: %v", err)
+	}
+}

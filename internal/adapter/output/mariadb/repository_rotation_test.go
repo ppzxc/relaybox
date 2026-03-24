@@ -58,7 +58,9 @@ func TestRepository_DeleteOlderThan_AllStatuses(t *testing.T) {
 		{ID: "new-1", Input: "x", Payload: domain.RawPayload(`{}`), Version: 1, CreatedAt: now, Status: domain.MessageStatusDelivered},
 	}
 	for _, m := range msgs {
-		repo.Save(ctx, m)
+		if err := repo.Save(ctx, m); err != nil {
+			t.Fatalf("Save(%s) error: %v", m.ID, err)
+		}
 	}
 
 	deleted, err := repo.DeleteOlderThan(ctx, now.Add(-24*time.Hour), nil)
