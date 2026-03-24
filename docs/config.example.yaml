@@ -81,6 +81,6 @@ queue:
   workerCount: 2
 
 worker:
-  defaultRetryCount: 3      # fallback retry count when output has no per-output retryCount
+  defaultRetryCount: 3      # fallback retry count (must be ≥1; values ≤0 are replaced with default 3)
   defaultRetryDelay: "1s"   # fallback base retry delay (Go duration string)
   pollBackoff: "500ms"      # sleep duration between empty-queue polls
