@@ -111,7 +111,7 @@ func (h *Handler) PatchMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if body.Status != string(domain.MessageStatusPending) {
-		writeError(w, r, http.StatusBadRequest, "Bad Request",
+		writeError(w, r, http.StatusUnprocessableEntity, "Unprocessable Entity",
 			fmt.Sprintf("only status=%q is accepted", domain.MessageStatusPending))
 		return
 	}

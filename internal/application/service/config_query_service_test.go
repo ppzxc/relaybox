@@ -10,8 +10,6 @@ import (
 	"relaybox/internal/domain"
 )
 
-func isErr(err, target error) bool { return errors.Is(err, target) }
-
 func testConfig() *cfgpkg.Config {
 	return &cfgpkg.Config{
 		Inputs: []cfgpkg.InputConfig{
@@ -57,7 +55,7 @@ func TestConfigQueryService_GetInput_NotFound(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
-	if !isErr(err, domain.ErrInputNotFound) {
+	if !errors.Is(err, domain.ErrInputNotFound) {
 		t.Errorf("expected ErrInputNotFound, got %v", err)
 	}
 }
@@ -97,7 +95,7 @@ func TestConfigQueryService_GetOutput_NotFound(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
-	if !isErr(err, domain.ErrOutputNotFound) {
+	if !errors.Is(err, domain.ErrOutputNotFound) {
 		t.Errorf("expected ErrOutputNotFound, got %v", err)
 	}
 }
@@ -122,7 +120,7 @@ func TestConfigQueryService_Update(t *testing.T) {
 	}
 	// old input/output must be gone
 	_, err := svc.GetInput(context.Background(), "beszel")
-	if !isErr(err, domain.ErrInputNotFound) {
+	if !errors.Is(err, domain.ErrInputNotFound) {
 		t.Errorf("old input should be gone after update, got err=%v", err)
 	}
 }

@@ -18,6 +18,7 @@ type InputSummary struct {
 
 // OutputSummary is the public representation of a configured output.
 // Secrets and internal fields are never included.
+// URL is intentionally included for observability — no auth credentials are embedded.
 type OutputSummary struct {
 	ID           string `json:"id"`
 	Type         string `json:"type"`
