@@ -86,6 +86,10 @@ func (r *Repository) FindByInput(ctx context.Context, inputID string, limit, off
 	return messages, nil
 }
 
+func (r *Repository) DeleteOlderThan(_ context.Context, _ time.Time, _ []domain.MessageStatus) (int64, error) {
+	panic("not implemented")
+}
+
 func toMessage(row db.Message) domain.Message {
 	m := domain.Message{
 		ID:         row.ID,
