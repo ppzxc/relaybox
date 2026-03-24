@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestInputTypeFromContext_PanicsWithMessage(t *testing.T) {
+func TestInputIDFromContext_PanicsWithMessage(t *testing.T) {
 	defer func() {
 		r := recover()
 		if r == nil {
@@ -17,5 +17,5 @@ func TestInputTypeFromContext_PanicsWithMessage(t *testing.T) {
 			t.Errorf("unexpected panic value: %v", r)
 		}
 	}()
-	inputTypeFromContext(context.Background())
+	inputIDFromContext(context.Background())
 }

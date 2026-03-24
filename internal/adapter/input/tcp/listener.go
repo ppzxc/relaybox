@@ -15,7 +15,7 @@ import (
 // to the ReceiveMessageUseCase.
 type Listener struct {
 	uc          input.ReceiveMessageUseCase
-	inputType   domain.InputType
+	inputID   domain.InputType
 	addr        string
 	delimiter   byte
 	contentType string
@@ -25,14 +25,14 @@ type Listener struct {
 // contentType maps from the parser config (e.g. "application/json" for json parser).
 func NewListener(
 	uc input.ReceiveMessageUseCase,
-	inputType domain.InputType,
+	inputID domain.InputType,
 	addr string,
 	delimiter byte,
 	contentType string,
 ) *Listener {
 	return &Listener{
 		uc:          uc,
-		inputType:   inputType,
+		inputID:   inputID,
 		addr:        addr,
 		delimiter:   delimiter,
 		contentType: contentType,
@@ -97,8 +97,8 @@ func (l *Listener) handleConn(ctx context.Context, conn net.Conn) {
 		// Copy the bytes since scanner reuses the buffer
 		msg := make([]byte, len(line))
 		copy(msg, line)
-		if _, err := l.uc.Receive(ctx, l.inputType, l.contentType, msg); err != nil {
-			slog.Warn("tcp receive error", "inputType", l.inputType, "err", err)
+		if _, err := l.uc.Receive(ctx, l.inputID, l.contentType, msg); err != nil {
+			slog.Warn("tcp receive error", "inputID", l.inputID, "err", err)
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -106,7 +106,7 @@ func (l *Listener) handleConn(ctx context.Context, conn net.Conn) {
 		case <-ctx.Done():
 			// expected on shutdown
 		default:
-			slog.Warn("tcp scanner error", "inputType", l.inputType, "err", err)
+			slog.Warn("tcp scanner error", "inputID", l.inputID, "err", err)
 		}
 	}
 }
