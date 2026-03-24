@@ -14,8 +14,9 @@ import (
 )
 
 type mockRepo struct {
-	saveFn   func(context.Context, domain.Message) error
-	updateFn func(context.Context, string, domain.MessageStatus, int, time.Time) error
+	saveFn      func(context.Context, domain.Message) error
+	updateFn    func(context.Context, string, domain.MessageStatus, int, time.Time) error
+	findByIDFn  func(string) (domain.Message, error)
 }
 
 func (m *mockRepo) Save(ctx context.Context, a domain.Message) error { return m.saveFn(ctx, a) }
@@ -25,7 +26,10 @@ func (m *mockRepo) UpdateDeliveryState(ctx context.Context, id string, s domain.
 	}
 	return nil
 }
-func (m *mockRepo) FindByID(_ context.Context, _ string) (domain.Message, error) {
+func (m *mockRepo) FindByID(_ context.Context, id string) (domain.Message, error) {
+	if m.findByIDFn != nil {
+		return m.findByIDFn(id)
+	}
 	return domain.Message{}, nil
 }
 func (m *mockRepo) FindByInput(_ context.Context, _ string, _, _ int) ([]domain.Message, error) {
@@ -145,6 +149,52 @@ func TestMessageService_Receive_WithoutParser(t *testing.T) {
 
 	if saved.ParsedData != nil {
 		t.Errorf("ParsedData should be nil when no parser is configured, got %v", saved.ParsedData)
+	}
+}
+
+func TestMessageService_GetByID_Success(t *testing.T) {
+	want := domain.Message{
+		ID:     "msg-1",
+		Input:  domain.InputTypeBeszel,
+		Status: domain.MessageStatusPending,
+	}
+	var receivedID string
+	repo := &mockRepo{
+		saveFn: func(_ context.Context, _ domain.Message) error { return nil },
+		findByIDFn: func(id string) (domain.Message, error) {
+			receivedID = id
+			return want, nil
+		},
+	}
+	queue := &mockQueue{enqueueFn: func(_ context.Context, _ domain.Message) error { return nil }}
+	svc := service.NewMessageService(repo, queue, nil, nil)
+
+	got, err := svc.GetByID(context.Background(), "msg-1")
+	if err != nil {
+		t.Fatalf("GetByID() error: %v", err)
+	}
+	if receivedID != "msg-1" {
+		t.Errorf("repo received id = %q, want %q", receivedID, "msg-1")
+	}
+	if got.ID != want.ID {
+		t.Errorf("ID = %q, want %q", got.ID, want.ID)
+	}
+	if got.Status != want.Status {
+		t.Errorf("Status = %q, want %q", got.Status, want.Status)
+	}
+}
+
+func TestMessageService_GetByID_NotFound(t *testing.T) {
+	repo := &mockRepo{
+		saveFn:     func(_ context.Context, _ domain.Message) error { return nil },
+		findByIDFn: func(_ string) (domain.Message, error) { return domain.Message{}, domain.ErrMessageNotFound },
+	}
+	queue := &mockQueue{enqueueFn: func(_ context.Context, _ domain.Message) error { return nil }}
+	svc := service.NewMessageService(repo, queue, nil, nil)
+
+	_, err := svc.GetByID(context.Background(), "nonexistent")
+	if !errors.Is(err, domain.ErrMessageNotFound) {
+		t.Fatalf("expected ErrMessageNotFound, got %v", err)
 	}
 }
 

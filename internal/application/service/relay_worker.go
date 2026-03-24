@@ -73,8 +73,8 @@ func (w *RelayWorker) processOne(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if w.cfg.OnProcessed != nil {
-		defer w.cfg.OnProcessed()
+	if w.cfg.Hooks.OnProcessed != nil {
+		defer w.cfg.Hooks.OnProcessed()
 	}
 
 	inputEngine, entries, err := w.ruleReader.GetRules(ctx, string(msg.Input))

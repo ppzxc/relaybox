@@ -2,6 +2,7 @@ package http_test
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -36,19 +37,31 @@ func (m *mockResolver) ValidateToken(inputID, token string) bool {
 	return m.secrets[inputID] == token
 }
 
-func newTestRouter(receiveFn func(context.Context, domain.InputType, string, []byte) (string, error)) http.Handler {
+type mockGetUseCase struct {
+	getByIDFn func(context.Context, string) (domain.Message, error)
+}
+
+func (m *mockGetUseCase) GetByID(ctx context.Context, id string) (domain.Message, error) {
+	if m.getByIDFn != nil {
+		return m.getByIDFn(ctx, id)
+	}
+	return domain.Message{}, domain.ErrMessageNotFound
+}
+
+func newTestRouter(receiveFn func(context.Context, domain.InputType, string, []byte) (string, error), getByIDFn func(context.Context, string) (domain.Message, error)) http.Handler {
 	uc := &mockUseCase{receiveFn: receiveFn}
+	getUC := &mockGetUseCase{getByIDFn: getByIDFn}
 	resolver := &mockResolver{
 		inputs:  map[string]domain.InputType{"beszel": domain.InputTypeBeszel},
 		secrets: map[string]string{"beszel": "test-token"},
 	}
-	return httpadapter.NewRouter(uc, resolver, nil)
+	return httpadapter.NewRouter(uc, getUC, resolver, nil)
 }
 
 func TestHandler_PostMessage_Success(t *testing.T) {
 	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
 		return "01JTEST00000000000000000", nil
-	})
+	}, nil)
 	req := httptest.NewRequest(http.MethodPost, "/inputs/beszel/messages", strings.NewReader(`{"level":"critical"}`))
 	req.Header.Set("Authorization", "Bearer test-token")
 	req.Header.Set("Content-Type", "application/json")
@@ -75,7 +88,7 @@ func TestHandler_PostMessage_Success(t *testing.T) {
 func TestHandler_PostMessage_InvalidToken(t *testing.T) {
 	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
 		return "", nil
-	})
+	}, nil)
 	req := httptest.NewRequest(http.MethodPost, "/inputs/beszel/messages", strings.NewReader(`{}`))
 	req.Header.Set("Authorization", "Bearer wrong-token")
 
@@ -93,7 +106,7 @@ func TestHandler_PostMessage_InvalidToken(t *testing.T) {
 func TestHandler_Healthz(t *testing.T) {
 	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
 		return "", nil
-	})
+	}, nil)
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -122,7 +135,7 @@ func TestHandler_PostMessage_EmptyToken(t *testing.T) {
 		return "id", nil
 	}}
 	resolver := &allowAllResolver{inputs: map[string]domain.InputType{"beszel": domain.InputTypeBeszel}}
-	router := httpadapter.NewRouter(uc, resolver, nil)
+	router := httpadapter.NewRouter(uc, &mockGetUseCase{}, resolver, nil)
 
 	tests := []struct {
 		name string
@@ -149,7 +162,7 @@ func TestHandler_PostMessage_EmptyToken(t *testing.T) {
 func TestHandler_PostMessage_BodyTooLarge(t *testing.T) {
 	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
 		return "id", nil
-	})
+	}, nil)
 	// 1MB + 1byte 초과 요청
 	oversized := strings.Repeat("x", 1<<20+1)
 	req := httptest.NewRequest(http.MethodPost, "/inputs/beszel/messages", strings.NewReader(oversized))
@@ -167,7 +180,7 @@ func TestHandler_PostMessage_BodyTooLarge(t *testing.T) {
 func TestHandler_InputNotFound(t *testing.T) {
 	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
 		return "", domain.ErrInputNotFound
-	})
+	}, nil)
 	req := httptest.NewRequest(http.MethodPost, "/inputs/unknown/messages", strings.NewReader(`{}`))
 	req.Header.Set("Authorization", "Bearer test-token")
 	w := httptest.NewRecorder()
@@ -181,7 +194,7 @@ func TestHandler_InputNotFound(t *testing.T) {
 func TestWebSocketEndpoint_NoToken_Returns401(t *testing.T) {
 	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
 		return "id", nil
-	})
+	}, nil)
 
 	tests := []struct {
 		name string
@@ -208,7 +221,7 @@ func TestWebSocketEndpoint_NoToken_Returns401(t *testing.T) {
 func TestDocs_OpenAPI(t *testing.T) {
 	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
 		return "", nil
-	})
+	}, nil)
 	req := httptest.NewRequest(http.MethodGet, "/docs/openapi", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -227,7 +240,7 @@ func TestDocs_OpenAPI(t *testing.T) {
 func TestDocs_AsyncAPI(t *testing.T) {
 	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
 		return "", nil
-	})
+	}, nil)
 	req := httptest.NewRequest(http.MethodGet, "/docs/asyncapi", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -243,23 +256,80 @@ func TestDocs_AsyncAPI(t *testing.T) {
 	}
 }
 
-func TestGetMessageByID_Returns501(t *testing.T) {
-	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
-		return "", nil
-	})
-	req := httptest.NewRequest(http.MethodGet, "/inputs/beszel/messages/some-id", nil)
+func TestHandler_GetMessage_Success(t *testing.T) {
+	want := domain.Message{
+		ID:     "msg-1",
+		Input:  domain.InputTypeBeszel,
+		Status: domain.MessageStatusPending,
+	}
+	router := newTestRouter(
+		func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
+			return "", nil
+		},
+		func(_ context.Context, id string) (domain.Message, error) {
+			return want, nil
+		},
+	)
+	req := httptest.NewRequest(http.MethodGet, "/inputs/beszel/messages/msg-1", nil)
 	req.Header.Set("Authorization", "Bearer test-token")
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	if w.Code != http.StatusNotImplemented {
-		t.Errorf("status = %d, want 501", w.Code)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
+		t.Fatalf("expected application/json, got %s", ct)
+	}
+	var got domain.Message
+	if err := json.NewDecoder(rr.Body).Decode(&got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.ID != want.ID {
+		t.Fatalf("expected id %q, got %q", want.ID, got.ID)
+	}
+}
+
+func TestHandler_GetMessage_NotFound(t *testing.T) {
+	router := newTestRouter(
+		func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
+			return "", nil
+		},
+		func(_ context.Context, id string) (domain.Message, error) {
+			return domain.Message{}, domain.ErrMessageNotFound
+		},
+	)
+	req := httptest.NewRequest(http.MethodGet, "/inputs/beszel/messages/nonexistent", nil)
+	req.Header.Set("Authorization", "Bearer test-token")
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d", rr.Code)
+	}
+}
+
+func TestHandler_GetMessage_NoAuth(t *testing.T) {
+	router := newTestRouter(
+		func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
+			return "", nil
+		},
+		nil,
+	)
+	req := httptest.NewRequest(http.MethodGet, "/inputs/beszel/messages/msg-1", nil)
+	// No Authorization header
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", rr.Code)
 	}
 }
 
 func TestDocs_HTML(t *testing.T) {
 	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
 		return "", nil
-	})
+	}, nil)
 	req := httptest.NewRequest(http.MethodGet, "/docs", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)

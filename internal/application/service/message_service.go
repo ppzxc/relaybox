@@ -13,6 +13,10 @@ import (
 	"relaybox/internal/domain"
 )
 
+// Compile-time interface checks
+var _ input.ReceiveMessageUseCase = (*MessageService)(nil)
+var _ input.GetMessageUseCase = (*MessageService)(nil)
+
 type MessageService struct {
 	repo        output.MessageRepository
 	queue       output.MessageQueue
@@ -32,6 +36,14 @@ func NewMessageService(
 		parserTypes: parserTypes,
 		registry:    registry,
 	}
+}
+
+func (s *MessageService) GetByID(ctx context.Context, id string) (domain.Message, error) {
+	msg, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return domain.Message{}, fmt.Errorf("get by id: %w", err)
+	}
+	return msg, nil
 }
 
 func (s *MessageService) Receive(ctx context.Context, inputType domain.InputType, contentType string, body []byte) (string, error) {

@@ -3,6 +3,7 @@ package config_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"relaybox/internal/config"
@@ -256,6 +257,62 @@ queue:
 	}
 	if len(rule.Routing) != 1 {
 		t.Errorf("routing len = %d, want 1", len(rule.Routing))
+	}
+}
+
+func TestLoad_InvalidInputEngine(t *testing.T) {
+	yaml := `
+inputs:
+  - id: beszel
+    type: BESZEL
+    engine: INVALID
+    secret: s
+outputs:
+  - id: ch1
+    type: WEBHOOK
+    engine: CEL
+    url: https://example.com
+storage:
+  type: SQLITE
+  path: ./data/test.db
+queue:
+  type: FILE
+  path: ./data/queue
+`
+	_, err := config.Load(writeConfig(t, yaml))
+	if err == nil {
+		t.Fatal("expected error for invalid input engine")
+	}
+	if !strings.Contains(err.Error(), "unsupported engine") {
+		t.Errorf("error should mention unsupported engine, got: %v", err)
+	}
+}
+
+func TestLoad_InvalidOutputEngine(t *testing.T) {
+	yaml := `
+inputs:
+  - id: beszel
+    type: BESZEL
+    engine: CEL
+    secret: s
+outputs:
+  - id: ch1
+    type: WEBHOOK
+    engine: INVALID
+    url: https://example.com
+storage:
+  type: SQLITE
+  path: ./data/test.db
+queue:
+  type: FILE
+  path: ./data/queue
+`
+	_, err := config.Load(writeConfig(t, yaml))
+	if err == nil {
+		t.Fatal("expected error for invalid output engine")
+	}
+	if !strings.Contains(err.Error(), "unsupported engine") {
+		t.Errorf("error should mention unsupported engine, got: %v", err)
 	}
 }
 

@@ -149,6 +149,8 @@ func unmarshalAndValidate(v *viper.Viper) (*Config, error) {
 	return &cfg, nil
 }
 
+var validEngines = map[string]struct{}{"CEL": {}, "EXPR": {}}
+
 func validateConfig(cfg *Config) error {
 	// Build output ID set for reference checks
 	seenOutputs := make(map[string]struct{}, len(cfg.Outputs))
@@ -163,6 +165,9 @@ func validateConfig(cfg *Config) error {
 		if c.Engine == "" {
 			return fmt.Errorf("output %q: engine must not be empty", c.ID)
 		}
+		if _, ok := validEngines[c.Engine]; !ok {
+			return fmt.Errorf("output %q: unsupported engine %q (valid: CEL, EXPR)", c.ID, c.Engine)
+		}
 	}
 
 	seenInputs := make(map[string]struct{}, len(cfg.Inputs))
@@ -176,6 +181,9 @@ func validateConfig(cfg *Config) error {
 		seenInputs[inp.ID] = struct{}{}
 		if inp.Engine == "" {
 			return fmt.Errorf("input %q: engine must not be empty", inp.ID)
+		}
+		if _, ok := validEngines[inp.Engine]; !ok {
+			return fmt.Errorf("input %q: unsupported engine %q (valid: CEL, EXPR)", inp.ID, inp.Engine)
 		}
 		if inp.Address != "" {
 			if _, err := net.ResolveTCPAddr("tcp", inp.Address); err != nil {

@@ -14,11 +14,12 @@ import (
 )
 
 type Handler struct {
-	uc input.ReceiveMessageUseCase
+	receiveUC input.ReceiveMessageUseCase
+	getUC     input.GetMessageUseCase
 }
 
-func NewHandler(uc input.ReceiveMessageUseCase) *Handler {
-	return &Handler{uc: uc}
+func NewHandler(receiveUC input.ReceiveMessageUseCase, getUC input.GetMessageUseCase) *Handler {
+	return &Handler{receiveUC: receiveUC, getUC: getUC}
 }
 
 func (h *Handler) PostMessage(w http.ResponseWriter, r *http.Request) {
@@ -37,7 +38,7 @@ func (h *Handler) PostMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	messageID, err := h.uc.Receive(r.Context(), inputType, r.Header.Get("Content-Type"), body)
+	messageID, err := h.receiveUC.Receive(r.Context(), inputType, r.Header.Get("Content-Type"), body)
 	if err != nil {
 		mapError(w, r, err)
 		return
@@ -53,6 +54,18 @@ func (h *Handler) PostMessage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Location", fmt.Sprintf("/inputs/%s/messages/%s", inputID, messageID))
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(resp)
+}
+
+func (h *Handler) GetMessage(w http.ResponseWriter, r *http.Request) {
+	messageID := chi.URLParam(r, "messageId")
+	msg, err := h.getUC.GetByID(r.Context(), messageID)
+	if err != nil {
+		mapError(w, r, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(msg)
 }
 
 func (h *Handler) Healthz(w http.ResponseWriter, r *http.Request) {

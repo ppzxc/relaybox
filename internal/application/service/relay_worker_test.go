@@ -119,7 +119,7 @@ func TestRelayWorker_UpdateDeliveryState_ErrorDoesNotBreakWorker(t *testing.T) {
 
 	processed, onProcessed := processedChan()
 	cfg := service.DefaultRelayWorkerConfig()
-	cfg.OnProcessed = onProcessed
+	cfg.Hooks.OnProcessed = onProcessed
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -149,7 +149,7 @@ func TestRelayWorker_DeliverSuccess(t *testing.T) {
 
 	processed, onProcessed := processedChan()
 	cfg := service.DefaultRelayWorkerConfig()
-	cfg.OnProcessed = onProcessed
+	cfg.Hooks.OnProcessed = onProcessed
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -179,7 +179,7 @@ func TestRelayWorker_NoRule_Nacks(t *testing.T) {
 
 	processed, onProcessed := processedChan()
 	cfg := service.DefaultRelayWorkerConfig()
-	cfg.OnProcessed = onProcessed
+	cfg.Hooks.OnProcessed = onProcessed
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -241,7 +241,7 @@ func TestRelayWorker_SendError_MarksAsFailed(t *testing.T) {
 
 	processed, onProcessed := processedChan()
 	cfg := service.DefaultRelayWorkerConfig()
-	cfg.OnProcessed = onProcessed
+	cfg.Hooks.OnProcessed = onProcessed
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -304,7 +304,7 @@ func TestRelayWorker_FilterTrue_Passes(t *testing.T) {
 
 	processed, onProcessed := processedChan()
 	cfg := service.DefaultRelayWorkerConfig()
-	cfg.OnProcessed = onProcessed
+	cfg.Hooks.OnProcessed = onProcessed
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -339,7 +339,7 @@ func TestRelayWorker_FilterFalse_Skips(t *testing.T) {
 
 	processed, onProcessed := processedChan()
 	cfg := service.DefaultRelayWorkerConfig()
-	cfg.OnProcessed = onProcessed
+	cfg.Hooks.OnProcessed = onProcessed
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -388,7 +388,7 @@ func TestRelayWorker_EmptyFilter_PassesAll(t *testing.T) {
 
 	processed, onProcessed := processedChan()
 	cfg := service.DefaultRelayWorkerConfig()
-	cfg.OnProcessed = onProcessed
+	cfg.Hooks.OnProcessed = onProcessed
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -421,7 +421,7 @@ func TestRelayWorker_EmptyRouting_AllOutputs(t *testing.T) {
 
 	processed, onProcessed := processedChan()
 	cfg := service.DefaultRelayWorkerConfig()
-	cfg.OnProcessed = onProcessed
+	cfg.Hooks.OnProcessed = onProcessed
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -459,7 +459,7 @@ func TestRelayWorker_Routing_MatchesCorrectOutputs(t *testing.T) {
 
 	processed, onProcessed := processedChan()
 	cfg := service.DefaultRelayWorkerConfig()
-	cfg.OnProcessed = onProcessed
+	cfg.Hooks.OnProcessed = onProcessed
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -499,7 +499,7 @@ func TestRelayWorker_TemplateExpressions_BuildPayload(t *testing.T) {
 
 	processed, onProcessed := processedChan()
 	cfg := service.DefaultRelayWorkerConfig()
-	cfg.OnProcessed = onProcessed
+	cfg.Hooks.OnProcessed = onProcessed
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -548,7 +548,7 @@ func TestRelayWorker_NoTemplate_UsesRawPayload(t *testing.T) {
 
 	processed, onProcessed := processedChan()
 	cfg := service.DefaultRelayWorkerConfig()
-	cfg.OnProcessed = onProcessed
+	cfg.Hooks.OnProcessed = onProcessed
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -599,7 +599,7 @@ func TestRelayWorker_Mapping_EnrichesData(t *testing.T) {
 
 	processed, onProcessed := processedChan()
 	cfg := service.DefaultRelayWorkerConfig()
-	cfg.OnProcessed = onProcessed
+	cfg.Hooks.OnProcessed = onProcessed
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -656,7 +656,7 @@ func TestRelayWorker_CustomRetryDefaults(t *testing.T) {
 	registry := &mockRegistryCountingError{sender: sender}
 
 	processed, onProcessed := processedChan()
-	cfg := service.RelayWorkerConfig{DefaultRetryCount: 1, DefaultRetryDelay: 10 * time.Millisecond, OnProcessed: onProcessed}
+	cfg := service.RelayWorkerConfig{DefaultRetryCount: 1, DefaultRetryDelay: 10 * time.Millisecond, Hooks: service.RelayWorkerHooks{OnProcessed: onProcessed}}
 	worker := service.NewRelayWorker(queue, repo, ruleReader, registry, newExprRegistry(), cfg)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -684,7 +684,7 @@ func TestRelayWorker_ZeroConfig_UsesDefaults(t *testing.T) {
 	registry := &mockRegistry{sender: sender}
 
 	processed, onProcessed := processedChan()
-	worker := service.NewRelayWorker(queue, repo, ruleReader, registry, newExprRegistry(), service.RelayWorkerConfig{OnProcessed: onProcessed})
+	worker := service.NewRelayWorker(queue, repo, ruleReader, registry, newExprRegistry(), service.RelayWorkerConfig{Hooks: service.RelayWorkerHooks{OnProcessed: onProcessed}})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -712,7 +712,7 @@ func TestRelayWorker_PerOutputRetry_OverridesDefault(t *testing.T) {
 
 	// DefaultRetryCount=5 but per-output RetryCount=1 should win.
 	processed, onProcessed := processedChan()
-	cfg := service.RelayWorkerConfig{DefaultRetryCount: 5, DefaultRetryDelay: 10 * time.Millisecond, OnProcessed: onProcessed}
+	cfg := service.RelayWorkerConfig{DefaultRetryCount: 5, DefaultRetryDelay: 10 * time.Millisecond, Hooks: service.RelayWorkerHooks{OnProcessed: onProcessed}}
 	worker := service.NewRelayWorker(queue, repo, ruleReader, registry, newExprRegistry(), cfg)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -759,7 +759,7 @@ func TestRelayWorker_InvalidTransition_SkipsUpdate(t *testing.T) {
 
 	processed, onProcessed := processedChan()
 	cfg := service.DefaultRelayWorkerConfig()
-	cfg.OnProcessed = onProcessed
+	cfg.Hooks.OnProcessed = onProcessed
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -801,7 +801,7 @@ func TestRelayWorker_ParsedDataDoesNotOverrideBuiltinKeys(t *testing.T) {
 
 	processed, onProcessed := processedChan()
 	cfg := service.DefaultRelayWorkerConfig()
-	cfg.OnProcessed = onProcessed
+	cfg.Hooks.OnProcessed = onProcessed
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -845,7 +845,7 @@ func TestRelayWorker_NestedTemplateKeys(t *testing.T) {
 
 	processed, onProcessed := processedChan()
 	cfg := service.DefaultRelayWorkerConfig()
-	cfg.OnProcessed = onProcessed
+	cfg.Hooks.OnProcessed = onProcessed
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -906,7 +906,7 @@ func TestRelayWorker_MultipleRuleEntries_EachProcessedIndependently(t *testing.T
 
 	processed, onProcessed := processedChan()
 	cfg := service.DefaultRelayWorkerConfig()
-	cfg.OnProcessed = onProcessed
+	cfg.Hooks.OnProcessed = onProcessed
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
