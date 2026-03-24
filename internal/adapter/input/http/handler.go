@@ -16,10 +16,25 @@ import (
 type Handler struct {
 	receiveUC input.ReceiveMessageUseCase
 	getUC     input.GetMessageUseCase
+	listUC    input.ListMessagesUseCase
+	requeueUC input.RequeueMessageUseCase
+	configUC  input.ConfigQueryUseCase
 }
 
-func NewHandler(receiveUC input.ReceiveMessageUseCase, getUC input.GetMessageUseCase) *Handler {
-	return &Handler{receiveUC: receiveUC, getUC: getUC}
+func NewHandler(
+	receiveUC input.ReceiveMessageUseCase,
+	getUC input.GetMessageUseCase,
+	listUC input.ListMessagesUseCase,
+	requeueUC input.RequeueMessageUseCase,
+	configUC input.ConfigQueryUseCase,
+) *Handler {
+	return &Handler{
+		receiveUC: receiveUC,
+		getUC:     getUC,
+		listUC:    listUC,
+		requeueUC: requeueUC,
+		configUC:  configUC,
+	}
 }
 
 func (h *Handler) PostMessage(w http.ResponseWriter, r *http.Request) {
@@ -72,4 +87,28 @@ func (h *Handler) Healthz(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+func (h *Handler) ListMessages(w http.ResponseWriter, r *http.Request) {
+	writeError(w, r, http.StatusNotImplemented, "Not Implemented", "not implemented")
+}
+
+func (h *Handler) PatchMessage(w http.ResponseWriter, r *http.Request) {
+	writeError(w, r, http.StatusNotImplemented, "Not Implemented", "not implemented")
+}
+
+func (h *Handler) ListInputs(w http.ResponseWriter, r *http.Request) {
+	writeError(w, r, http.StatusNotImplemented, "Not Implemented", "not implemented")
+}
+
+func (h *Handler) GetInput(w http.ResponseWriter, r *http.Request) {
+	writeError(w, r, http.StatusNotImplemented, "Not Implemented", "not implemented")
+}
+
+func (h *Handler) ListOutputs(w http.ResponseWriter, r *http.Request) {
+	writeError(w, r, http.StatusNotImplemented, "Not Implemented", "not implemented")
+}
+
+func (h *Handler) GetOutput(w http.ResponseWriter, r *http.Request) {
+	writeError(w, r, http.StatusNotImplemented, "Not Implemented", "not implemented")
 }

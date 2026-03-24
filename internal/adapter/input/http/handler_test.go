@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	httpadapter "relaybox/internal/adapter/input/http"
+	inputport "relaybox/internal/application/port/input"
 	"relaybox/internal/domain"
 )
 
@@ -48,6 +49,63 @@ func (m *mockGetUseCase) GetByID(ctx context.Context, id string) (domain.Message
 	return domain.Message{}, domain.ErrMessageNotFound
 }
 
+type mockListUseCase struct {
+	listByInputFn func(context.Context, string, int, int) ([]domain.Message, error)
+}
+
+func (m *mockListUseCase) ListByInput(ctx context.Context, inputID string, limit, offset int) ([]domain.Message, error) {
+	if m.listByInputFn != nil {
+		return m.listByInputFn(ctx, inputID, limit, offset)
+	}
+	return []domain.Message{}, nil
+}
+
+type mockRequeueUseCase struct {
+	requeueFn func(context.Context, string) (domain.Message, error)
+}
+
+func (m *mockRequeueUseCase) Requeue(ctx context.Context, messageID string) (domain.Message, error) {
+	if m.requeueFn != nil {
+		return m.requeueFn(ctx, messageID)
+	}
+	return domain.Message{}, domain.ErrMessageNotFound
+}
+
+type mockConfigQueryUseCase struct {
+	listInputsFn  func(context.Context) ([]inputport.InputSummary, error)
+	getInputFn    func(context.Context, string) (inputport.InputSummary, error)
+	listOutputsFn func(context.Context) ([]inputport.OutputSummary, error)
+	getOutputFn   func(context.Context, string) (inputport.OutputSummary, error)
+}
+
+func (m *mockConfigQueryUseCase) ListInputs(ctx context.Context) ([]inputport.InputSummary, error) {
+	if m.listInputsFn != nil {
+		return m.listInputsFn(ctx)
+	}
+	return []inputport.InputSummary{}, nil
+}
+
+func (m *mockConfigQueryUseCase) GetInput(ctx context.Context, id string) (inputport.InputSummary, error) {
+	if m.getInputFn != nil {
+		return m.getInputFn(ctx, id)
+	}
+	return inputport.InputSummary{}, domain.ErrInputNotFound
+}
+
+func (m *mockConfigQueryUseCase) ListOutputs(ctx context.Context) ([]inputport.OutputSummary, error) {
+	if m.listOutputsFn != nil {
+		return m.listOutputsFn(ctx)
+	}
+	return []inputport.OutputSummary{}, nil
+}
+
+func (m *mockConfigQueryUseCase) GetOutput(ctx context.Context, id string) (inputport.OutputSummary, error) {
+	if m.getOutputFn != nil {
+		return m.getOutputFn(ctx, id)
+	}
+	return inputport.OutputSummary{}, domain.ErrOutputNotFound
+}
+
 func newTestRouter(receiveFn func(context.Context, string, string, []byte) (string, error), getByIDFn func(context.Context, string) (domain.Message, error)) http.Handler {
 	uc := &mockUseCase{receiveFn: receiveFn}
 	getUC := &mockGetUseCase{getByIDFn: getByIDFn}
@@ -55,7 +113,7 @@ func newTestRouter(receiveFn func(context.Context, string, string, []byte) (stri
 		inputs:  map[string]string{"beszel": "beszel"},
 		secrets: map[string]string{"beszel": "test-token"},
 	}
-	return httpadapter.NewRouter(uc, getUC, resolver, nil)
+	return httpadapter.NewRouter(uc, getUC, nil, nil, nil, resolver, nil)
 }
 
 func TestHandler_PostMessage_Success(t *testing.T) {
@@ -135,7 +193,7 @@ func TestHandler_PostMessage_EmptyToken(t *testing.T) {
 		return "id", nil
 	}}
 	resolver := &allowAllResolver{inputs: map[string]string{"beszel": "beszel"}}
-	router := httpadapter.NewRouter(uc, &mockGetUseCase{}, resolver, nil)
+	router := httpadapter.NewRouter(uc, &mockGetUseCase{}, nil, nil, nil, resolver, nil)
 
 	tests := []struct {
 		name string

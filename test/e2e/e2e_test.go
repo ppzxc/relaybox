@@ -95,7 +95,7 @@ func TestE2E_PostMessage_Returns201(t *testing.T) {
 		inputs:  map[string]string{"beszel": "beszel"},
 		secrets: map[string]string{"beszel": "tok"},
 	}
-	router := httpadapter.NewRouter(msgSvc, msgSvc, resolver, nil)
+	router := httpadapter.NewRouter(msgSvc, msgSvc, nil, nil, nil, resolver, nil)
 	srv := httptest.NewServer(router)
 	defer srv.Close()
 
@@ -164,7 +164,7 @@ func TestE2E_Healthz(t *testing.T) {
 	queue, _ := filequeue.New(t.TempDir())
 	msgSvc := service.NewMessageService(repo, queue, nil, nil)
 	resolver := &configInputResolver{}
-	router := httpadapter.NewRouter(msgSvc, msgSvc, resolver, nil)
+	router := httpadapter.NewRouter(msgSvc, msgSvc, nil, nil, nil, resolver, nil)
 	srv := httptest.NewServer(router)
 	defer srv.Close()
 
