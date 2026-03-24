@@ -110,7 +110,7 @@ func runServer(cfgPath string) error {
 	parserRegistry.Register(parser.NewXMLParser())
 	parserRegistry.Register(parser.NewLogfmtParser())
 
-	parserTypes := make(map[domain.InputType]string)
+	parserTypes := make(map[string]string)
 	for _, inp := range cfg.Inputs {
 		if inp.Parser == "" {
 			continue
@@ -124,7 +124,7 @@ func runServer(cfgPath string) error {
 			parserKey = "REGEX:" + inp.ID
 			parserRegistry.RegisterWithKey(parserKey, regexParser)
 		}
-		parserTypes[domain.InputType(inp.Type)] = parserKey
+		parserTypes[inp.ID] = parserKey
 	}
 
 	// Application services
@@ -155,9 +155,9 @@ func runServer(cfgPath string) error {
 			delimiter = inp.Delimiter[0]
 		}
 		contentType := parserToContentType(inp.Parser)
-		tcpL := tcpadapter.NewListener(msgSvc, domain.InputType(inp.Type), inp.Address, delimiter, contentType)
+		tcpL := tcpadapter.NewListener(msgSvc, inp.ID, inp.Address, delimiter, contentType)
 		go func() {
-			slog.Info("tcp listener starting", "address", inp.Address, "inputType", inp.Type)
+			slog.Info("tcp listener starting", "address", inp.Address, "inputID", inp.ID)
 			if err := tcpL.Start(ctx); err != nil {
 				slog.Error("tcp listener error", "address", inp.Address, "err", err)
 			}
@@ -199,21 +199,21 @@ func runServer(cfgPath string) error {
 
 // configInputResolver Config-based InputResolver implementation
 type configInputResolver struct {
-	inputs  map[string]domain.InputType
+	inputs  map[string]string
 	secrets map[string]string
 }
 
 func newConfigInputResolver(cfg *cfgpkg.Config) *configInputResolver {
-	inputs := make(map[string]domain.InputType, len(cfg.Inputs))
+	inputs := make(map[string]string, len(cfg.Inputs))
 	secrets := make(map[string]string, len(cfg.Inputs))
 	for _, s := range cfg.Inputs {
-		inputs[s.ID] = domain.InputType(s.Type)
+		inputs[s.ID] = s.ID
 		secrets[s.ID] = s.Secret
 	}
 	return &configInputResolver{inputs: inputs, secrets: secrets}
 }
 
-func (r *configInputResolver) Resolve(inputID string) (domain.InputType, error) {
+func (r *configInputResolver) Resolve(inputID string) (string, error) {
 	st, ok := r.inputs[inputID]
 	if !ok {
 		return "", fmt.Errorf("resolve %q: %w", inputID, domain.ErrInputNotFound)

@@ -19,8 +19,8 @@ const (
 	inputIDKey  contextKey = "inputID"
 )
 
-func inputIDFromContext(ctx context.Context) domain.InputType {
-	v, ok := ctx.Value(inputIDKey).(domain.InputType)
+func inputIDFromContext(ctx context.Context) string {
+	v, ok := ctx.Value(inputIDKey).(string)
 	if !ok {
 		panic("inputAuthMiddleware not applied: inputType missing from context")
 	}

@@ -8,14 +8,13 @@ import (
 	"net"
 
 	"relaybox/internal/application/port/input"
-	"relaybox/internal/domain"
 )
 
 // Listener accepts TCP connections and delivers delimiter-framed messages
 // to the ReceiveMessageUseCase.
 type Listener struct {
 	uc          input.ReceiveMessageUseCase
-	inputID   domain.InputType
+	inputID     string
 	addr        string
 	delimiter   byte
 	contentType string
@@ -25,7 +24,7 @@ type Listener struct {
 // contentType maps from the parser config (e.g. "application/json" for json parser).
 func NewListener(
 	uc input.ReceiveMessageUseCase,
-	inputID domain.InputType,
+	inputID string,
 	addr string,
 	delimiter byte,
 	contentType string,

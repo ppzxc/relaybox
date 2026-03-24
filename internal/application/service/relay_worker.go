@@ -77,7 +77,7 @@ func (w *RelayWorker) processOne(ctx context.Context) error {
 		defer w.cfg.Hooks.OnProcessed()
 	}
 
-	inputEngine, entries, err := w.ruleReader.GetRules(ctx, string(msg.Input))
+	inputEngine, entries, err := w.ruleReader.GetRules(ctx, msg.Input)
 	if err != nil {
 		_ = nack()
 		return fmt.Errorf("get rules: %w", err)
@@ -243,7 +243,7 @@ var builtinEvalKeys = map[string]struct{}{
 func buildEvalData(msg domain.Message) map[string]any {
 	data := map[string]any{
 		"id":        msg.ID,
-		"input":     string(msg.Input),
+		"input":     msg.Input,
 		"payload":   string(msg.Payload),
 		"createdAt": msg.CreatedAt.Format(time.RFC3339),
 		"status":    string(msg.Status),

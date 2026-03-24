@@ -7,7 +7,6 @@ import (
 
 	"github.com/gorilla/websocket"
 	"relaybox/internal/application/port/input"
-	"relaybox/internal/domain"
 )
 
 type Handler struct {
@@ -36,7 +35,7 @@ func sameHostOrigin(r *http.Request) bool {
 	return u.Host == r.Host
 }
 
-func (h *Handler) ServeWS(w http.ResponseWriter, r *http.Request, inputID domain.InputType) {
+func (h *Handler) ServeWS(w http.ResponseWriter, r *http.Request, inputID string) {
 	conn, err := h.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		slog.Warn("ws upgrade failed", "err", err)

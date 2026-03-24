@@ -20,14 +20,14 @@ var _ input.GetMessageUseCase = (*MessageService)(nil)
 type MessageService struct {
 	repo        output.MessageRepository
 	queue       output.MessageQueue
-	parserTypes map[domain.InputType]string
+	parserTypes map[string]string
 	registry    input.ParserRegistry
 }
 
 func NewMessageService(
 	repo output.MessageRepository,
 	queue output.MessageQueue,
-	parserTypes map[domain.InputType]string,
+	parserTypes map[string]string,
 	registry input.ParserRegistry,
 ) *MessageService {
 	return &MessageService{
@@ -46,7 +46,7 @@ func (s *MessageService) GetByID(ctx context.Context, id string) (domain.Message
 	return msg, nil
 }
 
-func (s *MessageService) Receive(ctx context.Context, inputID domain.InputType, contentType string, body []byte) (string, error) {
+func (s *MessageService) Receive(ctx context.Context, inputID string, contentType string, body []byte) (string, error) {
 	id := ulid.MustNew(ulid.Timestamp(time.Now()), rand.Reader).String()
 	msg := domain.Message{
 		ID:        id,

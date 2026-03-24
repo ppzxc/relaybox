@@ -24,11 +24,11 @@ import (
 
 // configInputResolver replicates cmd/server/main.go logic for E2E DI
 type configInputResolver struct {
-	inputs  map[string]domain.InputType
+	inputs  map[string]string
 	secrets map[string]string
 }
 
-func (r *configInputResolver) Resolve(id string) (domain.InputType, error) {
+func (r *configInputResolver) Resolve(id string) (string, error) {
 	st, ok := r.inputs[id]
 	if !ok {
 		return "", domain.ErrInputNotFound
@@ -91,7 +91,7 @@ func TestE2E_PostMessage_Returns201(t *testing.T) {
 	worker := service.NewRelayWorker(queue, repo, ruleReader, registry, newExprRegistry(), service.DefaultRelayWorkerConfig())
 
 	resolver := &configInputResolver{
-		inputs:  map[string]domain.InputType{"beszel": domain.InputTypeBeszel},
+		inputs:  map[string]string{"beszel": domain.InputTypeBeszel},
 		secrets: map[string]string{"beszel": "tok"},
 	}
 	router := httpadapter.NewRouter(msgSvc, msgSvc, resolver, nil)

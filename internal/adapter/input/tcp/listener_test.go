@@ -20,12 +20,12 @@ type mockReceiveUseCase struct {
 }
 
 type receiveCall struct {
-	inputType   domain.InputType
+	inputType   string
 	contentType string
 	body        []byte
 }
 
-func (m *mockReceiveUseCase) Receive(_ context.Context, inputType domain.InputType, contentType string, body []byte) (string, error) {
+func (m *mockReceiveUseCase) Receive(_ context.Context, inputType string, contentType string, body []byte) (string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	cp := make([]byte, len(body))

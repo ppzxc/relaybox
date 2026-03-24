@@ -118,7 +118,7 @@ func TestMessageService_Receive_WithParser(t *testing.T) {
 		},
 	}
 
-	parserTypes := map[domain.InputType]string{
+	parserTypes := map[string]string{
 		domain.InputTypeBeszel: "JSON",
 	}
 
@@ -212,7 +212,7 @@ func TestMessageService_Receive_ParserFailsGracefully(t *testing.T) {
 		},
 	}
 
-	parserTypes := map[domain.InputType]string{
+	parserTypes := map[string]string{
 		domain.InputTypeBeszel: "JSON",
 	}
 

@@ -8,7 +8,6 @@ import (
 	"relaybox/internal/adapter/input/websocket"
 	"relaybox/internal/apidocs"
 	"relaybox/internal/application/port/input"
-	"relaybox/internal/domain"
 )
 
 // API 버전 — X-API-Version 헤더로 반환
@@ -17,7 +16,7 @@ const APIVersion = "2026-03-20"
 // WSHandler is the subset of websocket.Handler used by the router.
 // nil is allowed for tests that don't exercise the /messages/ws path.
 type WSHandler interface {
-	ServeWS(w http.ResponseWriter, r *http.Request, inputID domain.InputType)
+	ServeWS(w http.ResponseWriter, r *http.Request, inputID string)
 }
 
 func NewRouter(receiveUC input.ReceiveMessageUseCase, getUC input.GetMessageUseCase, resolver input.InputResolver, ws WSHandler) *chi.Mux {

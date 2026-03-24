@@ -38,7 +38,7 @@ func (r *Repository) Save(ctx context.Context, m domain.Message) error {
 	err := r.queries.InsertMessage(ctx, db.InsertMessageParams{
 		ID:         m.ID,
 		Version:    int64(m.Version),
-		Input:      string(m.Input),
+		Input:      m.Input,
 		Payload:    []byte(m.Payload),
 		CreatedAt:  m.CreatedAt.UTC(),
 		Status:     string(m.Status),
@@ -90,7 +90,7 @@ func toMessage(row db.Message) domain.Message {
 	m := domain.Message{
 		ID:         row.ID,
 		Version:    int(row.Version),
-		Input:      domain.InputType(row.Input),
+		Input:      row.Input,
 		Payload:    domain.RawPayload(row.Payload),
 		CreatedAt:  row.CreatedAt,
 		Status:     domain.MessageStatus(row.Status),
