@@ -259,6 +259,56 @@ queue:
 	}
 }
 
+func TestLoad_InvalidInputEngine(t *testing.T) {
+	yaml := `
+inputs:
+  - id: beszel
+    type: BESZEL
+    engine: INVALID
+    secret: s
+outputs:
+  - id: ch1
+    type: WEBHOOK
+    engine: CEL
+    url: https://example.com
+storage:
+  type: SQLITE
+  path: ./data/test.db
+queue:
+  type: FILE
+  path: ./data/queue
+`
+	_, err := config.Load(writeConfig(t, yaml))
+	if err == nil {
+		t.Fatal("expected error for invalid input engine")
+	}
+}
+
+func TestLoad_InvalidOutputEngine(t *testing.T) {
+	yaml := `
+inputs:
+  - id: beszel
+    type: BESZEL
+    engine: CEL
+    secret: s
+outputs:
+  - id: ch1
+    type: WEBHOOK
+    engine: INVALID
+    url: https://example.com
+storage:
+  type: SQLITE
+  path: ./data/test.db
+queue:
+  type: FILE
+  path: ./data/queue
+`
+	_, err := config.Load(writeConfig(t, yaml))
+	if err == nil {
+		t.Fatal("expected error for invalid output engine")
+	}
+}
+
 func TestLoad_WorkerConfigDefaults(t *testing.T) {
 	cfg, err := config.Load(writeConfig(t, testYAML))
 	if err != nil {
