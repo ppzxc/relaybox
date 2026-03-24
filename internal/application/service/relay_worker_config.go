@@ -2,13 +2,20 @@ package service
 
 import "time"
 
+// RelayWorkerHooks contains optional lifecycle callbacks.
+// These are intended for testing; production code leaves them nil (zero value).
+type RelayWorkerHooks struct {
+	// OnProcessed is called after each successfully dequeued message is processed.
+	OnProcessed func()
+}
+
 // RelayWorkerConfig holds tunable parameters for RelayWorker.
 // Zero values are replaced with defaults by withDefaults().
 type RelayWorkerConfig struct {
 	DefaultRetryCount int
 	DefaultRetryDelay time.Duration
 	PollBackoff       time.Duration
-	OnProcessed       func() // called after each successfully dequeued message is processed; nil in production
+	Hooks             RelayWorkerHooks
 }
 
 // DefaultRelayWorkerConfig returns a config with the original hard-coded defaults.
