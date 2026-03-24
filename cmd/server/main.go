@@ -138,7 +138,7 @@ func runServer(cfgPath string) error {
 	// HTTP + WebSocket adapter assembly
 	resolver := newConfigInputResolver(cfg)
 	wsHandler := wsadapter.NewHandler(msgSvc)
-	router := httpadapter.NewRouter(msgSvc, nil, resolver, wsHandler)
+	router := httpadapter.NewRouter(msgSvc, msgSvc, resolver, wsHandler)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

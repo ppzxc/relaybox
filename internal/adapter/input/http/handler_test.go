@@ -2,6 +2,7 @@ package http_test
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -255,16 +256,73 @@ func TestDocs_AsyncAPI(t *testing.T) {
 	}
 }
 
-func TestGetMessageByID_Returns501(t *testing.T) {
-	router := newTestRouter(func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
-		return "", nil
-	}, nil)
-	req := httptest.NewRequest(http.MethodGet, "/inputs/beszel/messages/some-id", nil)
+func TestHandler_GetMessage_Success(t *testing.T) {
+	want := domain.Message{
+		ID:     "msg-1",
+		Input:  domain.InputTypeBeszel,
+		Status: domain.MessageStatusPending,
+	}
+	router := newTestRouter(
+		func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
+			return "", nil
+		},
+		func(_ context.Context, id string) (domain.Message, error) {
+			return want, nil
+		},
+	)
+	req := httptest.NewRequest(http.MethodGet, "/inputs/beszel/messages/msg-1", nil)
 	req.Header.Set("Authorization", "Bearer test-token")
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	if w.Code != http.StatusNotImplemented {
-		t.Errorf("status = %d, want 501", w.Code)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
+		t.Fatalf("expected application/json, got %s", ct)
+	}
+	var got domain.Message
+	if err := json.NewDecoder(rr.Body).Decode(&got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.ID != want.ID {
+		t.Fatalf("expected id %q, got %q", want.ID, got.ID)
+	}
+}
+
+func TestHandler_GetMessage_NotFound(t *testing.T) {
+	router := newTestRouter(
+		func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
+			return "", nil
+		},
+		func(_ context.Context, id string) (domain.Message, error) {
+			return domain.Message{}, domain.ErrMessageNotFound
+		},
+	)
+	req := httptest.NewRequest(http.MethodGet, "/inputs/beszel/messages/nonexistent", nil)
+	req.Header.Set("Authorization", "Bearer test-token")
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d", rr.Code)
+	}
+}
+
+func TestHandler_GetMessage_NoAuth(t *testing.T) {
+	router := newTestRouter(
+		func(_ context.Context, _ domain.InputType, _ string, _ []byte) (string, error) {
+			return "", nil
+		},
+		nil,
+	)
+	req := httptest.NewRequest(http.MethodGet, "/inputs/beszel/messages/msg-1", nil)
+	// No Authorization header
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", rr.Code)
 	}
 }
 
