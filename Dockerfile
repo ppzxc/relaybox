@@ -10,7 +10,7 @@ COPY . .
 RUN CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=${VERSION}" -o /relaybox ./cmd/server/
 
 # ── Runtime ──────────────────────────────────────────────
-FROM alpine:latest
+FROM alpine:3.21
 
 RUN apk add --no-cache ca-certificates tzdata \
     && addgroup -S relaybox \
