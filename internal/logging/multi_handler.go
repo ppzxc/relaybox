@@ -27,15 +27,18 @@ func (m *MultiHandler) Enabled(ctx context.Context, level slog.Level) bool {
 
 // Handle은 활성화된 각 handler에 레코드 복사본을 전달한다.
 // r.Clone()을 사용해 data race를 방지한다.
+// 여러 handler 중 일부가 에러를 반환해도 나머지 handler 처리를 계속하며,
+// 첫 번째로 발생한 에러를 최종 반환한다.
 func (m *MultiHandler) Handle(ctx context.Context, r slog.Record) error {
+	var firstErr error
 	for _, h := range m.handlers {
 		if h.Enabled(ctx, r.Level) {
-			if err := h.Handle(ctx, r.Clone()); err != nil {
-				return err
+			if err := h.Handle(ctx, r.Clone()); err != nil && firstErr == nil {
+				firstErr = err
 			}
 		}
 	}
-	return nil
+	return firstErr
 }
 
 // WithAttrs는 각 handler에 attrs를 전파한 새 MultiHandler를 반환한다.

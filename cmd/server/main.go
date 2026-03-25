@@ -16,9 +16,10 @@ import (
 
 	"github.com/spf13/cobra"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
+
 	httpadapter "relaybox/internal/adapter/input/http"
-	"relaybox/internal/logging"
 	"relaybox/internal/adapter/input/parser"
+	"relaybox/internal/logging"
 	tcpadapter "relaybox/internal/adapter/input/tcp"
 	wsadapter "relaybox/internal/adapter/input/websocket"
 	outputconfig "relaybox/internal/adapter/output/config"
@@ -90,7 +91,12 @@ func runServer(cfgPath string) error {
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
-	setupLogger(cfg)
+	logCloser := setupLogger(cfg)
+	defer func() {
+		if err := logCloser.Close(); err != nil {
+			slog.Error("log file close error", "err", err)
+		}
+	}()
 	slog.Info("starting relaybox", "version", version)
 
 	// Outbound adapters
@@ -345,9 +351,13 @@ func generateSecret(length int) (string, error) {
 	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
-func setupLogger(cfg *cfgpkg.Config) {
+// setupLogger는 cfg에 따라 slog 기본 로거를 설정하고,
+// 파일 로거가 활성화된 경우 종료 시 Close()를 호출해야 할 Closer를 반환한다.
+// 파일 로거가 없으면 no-op Closer를 반환한다.
+func setupLogger(cfg *cfgpkg.Config) io.Closer {
 	opts := &slog.HandlerOptions{Level: parseLogLevel(cfg.Log.Level)}
 	var handlers []slog.Handler
+	var fileCloser io.Closer = io.NopCloser(nil)
 
 	if cfg.Log.Stdout.Enabled {
 		format := resolveFormat(cfg.Log.Stdout.Format, cfg.Log.Format)
@@ -366,15 +376,22 @@ func setupLogger(cfg *cfgpkg.Config) {
 			MaxAge:     cfg.Log.File.MaxAgeDays,
 			Compress:   cfg.Log.File.Compress,
 		}
+		fileCloser = w
 		format := resolveFormat(cfg.Log.File.Format, cfg.Log.Format)
 		handlers = append(handlers, newHandler(w, format, opts))
 	}
 
-	if len(handlers) == 1 {
+	switch len(handlers) {
+	case 0:
+		// config.Validate()에서 이미 거부되므로 여기에 도달할 수 없음
+		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, opts)))
+	case 1:
 		slog.SetDefault(slog.New(handlers[0]))
-	} else {
+	default:
 		slog.SetDefault(slog.New(logging.NewMultiHandler(handlers...)))
 	}
+
+	return fileCloser
 }
 
 func resolveFormat(specific, fallback string) string {
