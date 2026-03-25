@@ -15,7 +15,9 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 	httpadapter "relaybox/internal/adapter/input/http"
+	"relaybox/internal/logging"
 	"relaybox/internal/adapter/input/parser"
 	tcpadapter "relaybox/internal/adapter/input/tcp"
 	wsadapter "relaybox/internal/adapter/input/websocket"
@@ -345,7 +347,41 @@ func generateSecret(length int) (string, error) {
 
 func setupLogger(cfg *cfgpkg.Config) {
 	opts := &slog.HandlerOptions{Level: parseLogLevel(cfg.Log.Level)}
-	slog.SetDefault(slog.New(newHandler(os.Stdout, cfg.Log.Format, opts)))
+	var handlers []slog.Handler
+
+	if cfg.Log.Stdout.Enabled {
+		format := resolveFormat(cfg.Log.Stdout.Format, cfg.Log.Format)
+		handlers = append(handlers, newHandler(os.Stdout, format, opts))
+	}
+
+	if cfg.Log.File.Enabled {
+		maxSize := cfg.Log.File.MaxSizeMB
+		if maxSize == 0 {
+			maxSize = 1024 * 1024 // 실질적 무제한 (1TB)
+		}
+		w := &lumberjack.Logger{
+			Filename:   cfg.Log.File.Path,
+			MaxSize:    maxSize,
+			MaxBackups: cfg.Log.File.MaxBackups,
+			MaxAge:     cfg.Log.File.MaxAgeDays,
+			Compress:   cfg.Log.File.Compress,
+		}
+		format := resolveFormat(cfg.Log.File.Format, cfg.Log.Format)
+		handlers = append(handlers, newHandler(w, format, opts))
+	}
+
+	if len(handlers) == 1 {
+		slog.SetDefault(slog.New(handlers[0]))
+	} else {
+		slog.SetDefault(slog.New(logging.NewMultiHandler(handlers...)))
+	}
+}
+
+func resolveFormat(specific, fallback string) string {
+	if specific != "" {
+		return strings.ToUpper(specific)
+	}
+	return strings.ToUpper(fallback)
 }
 
 func parseLogLevel(s string) slog.Level {
