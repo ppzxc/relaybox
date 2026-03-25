@@ -431,11 +431,13 @@ func newRepository(cfg cfgpkg.StorageConfig) (output.MessageRepository, io.Close
 		return repo, repo, nil
 	case "MARIADB":
 		lifetime, _ := time.ParseDuration(cfg.ConnMaxLifetime)
+		idleTime, _ := time.ParseDuration(cfg.ConnMaxIdleTime)
 		repo, err := mariadbadapter.New(mariadbadapter.Config{
 			DSN:             cfg.DSN,
 			MaxOpenConns:    cfg.MaxOpenConns,
 			MaxIdleConns:    cfg.MaxIdleConns,
 			ConnMaxLifetime: lifetime,
+			ConnMaxIdleTime: idleTime,
 			TableName:       cfg.TableName,
 		})
 		if err != nil {
