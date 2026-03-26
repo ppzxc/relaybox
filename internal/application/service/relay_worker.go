@@ -53,6 +53,10 @@ func (w *RelayWorker) Wait() {
 
 func (w *RelayWorker) loop(ctx context.Context) {
 	defer w.wg.Done()
+	w.safeProcessLoop(ctx)
+}
+
+func (w *RelayWorker) safeProcessLoop(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
