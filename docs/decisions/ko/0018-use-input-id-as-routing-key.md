@@ -3,6 +3,8 @@ status: accepted
 date: 2026-02-20
 ---
 
+> [English version](../0018-use-input-id-as-routing-key.md)
+
 # ADR-0018: InputType 열거형 제거, input ID를 라우팅 키로 사용
 
 ## Context and Problem Statement

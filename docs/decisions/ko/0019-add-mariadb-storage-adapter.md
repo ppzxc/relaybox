@@ -3,6 +3,8 @@ status: accepted
 date: 2026-03-01
 ---
 
+> [English version](../0019-add-mariadb-storage-adapter.md)
+
 # ADR-0019: MariaDB 스토리지 어댑터 추가
 
 ## Context and Problem Statement

@@ -3,6 +3,8 @@ status: accepted
 date: 2026-02-10
 ---
 
+> [English version](../0020-use-dot-notation-template-keys.md)
+
 # ADR-0020: dot-notation 템플릿 키로 중첩 JSON 생성
 
 ## Context and Problem Statement

@@ -3,6 +3,8 @@ status: accepted
 date: 2026-01-01
 ---
 
+> [English version](../0003-use-manual-dependency-injection.md)
+
 # ADR-0003: 수동 의존성 주입 (DI 프레임워크 없음)
 
 ## Context and Problem Statement

@@ -3,6 +3,8 @@ status: accepted
 date: 2026-03-26
 ---
 
+> [English version](../0001-record-architecture-decisions.md)
+
 # ADR-0001: ADR로 아키텍처 결정 기록
 
 ## Context and Problem Statement

@@ -3,9 +3,11 @@ status: accepted
 date: 2026-02-15
 ---
 
-# ADR-0017: CGO-free SQLite로 마이그레이션 (mattn → modernc)
+> [English version](../0017-migrate-to-cgo-free-sqlite.md)
 
 > Supersedes: mattn/go-sqlite3 사용 결정 (v0.1.0)
+
+# ADR-0017: CGO-free SQLite로 마이그레이션 (mattn → modernc)
 
 ## Context and Problem Statement
 

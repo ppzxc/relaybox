@@ -60,7 +60,7 @@ cmd/server/main.go               ← DI 조립, cobra CLI
 
 ## Architecture Decision Records (ADR)
 
-아키텍처 결정사항은 `docs/adr/`에 MADR 형식으로 기록되어 있다. 코드 변경 전 관련 ADR을 확인하고, 새로운 아키텍처 결정 시 ADR을 추가할 것. 인덱스: [`docs/adr/README.md`](../docs/adr/README.md)
+아키텍처 결정사항은 `docs/decisions/`에 MADR 형식으로 기록되어 있다. 코드 변경 전 관련 ADR을 확인하고, 새로운 아키텍처 결정 시 ADR을 추가할 것. 인덱스: [`docs/decisions/README.md`](../docs/decisions/README.md)
 
 ## Key Design Decisions
 

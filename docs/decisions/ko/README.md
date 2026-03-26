@@ -1,4 +1,6 @@
-# Architecture Decision Records
+# 아키텍처 결정 기록 (Architecture Decision Records)
+
+> [English version](../README.md)
 
 이 디렉토리는 relaybox 프로젝트의 아키텍처 결정사항을 [MADR 4.0.0](https://adr.github.io/madr/) 형식으로 기록합니다.
 
@@ -62,3 +64,4 @@ Chosen option: "Option A", because {핵심 이유}.
 ```
 
 3. 이 README의 목록에 추가
+4. 영어 원본 문서도 함께 추가 ([`../README.md`](../README.md))

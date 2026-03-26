@@ -3,6 +3,8 @@ status: accepted
 date: 2026-01-01
 ---
 
+> [English version](../0008-use-string-enums-for-domain-types.md)
+
 # ADR-0008: string 기반 도메인 열거형
 
 ## Context and Problem Statement

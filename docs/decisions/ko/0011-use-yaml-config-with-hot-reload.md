@@ -3,6 +3,8 @@ status: accepted
 date: 2026-01-01
 ---
 
+> [English version](../0011-use-yaml-config-with-hot-reload.md)
+
 # ADR-0011: Viper YAML 설정 + 핫 리로드
 
 ## Context and Problem Statement

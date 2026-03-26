@@ -3,6 +3,8 @@ status: accepted
 date: 2026-01-01
 ---
 
+> [English version](../0007-use-ack-nack-queue-semantics.md)
+
 # ADR-0007: Ack/Nack 큐 소비 패턴
 
 ## Context and Problem Statement

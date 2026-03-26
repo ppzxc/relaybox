@@ -3,6 +3,8 @@ status: accepted
 date: 2026-01-01
 ---
 
+> [English version](../0002-use-hexagonal-architecture.md)
+
 # ADR-0002: 헥사고날 아키텍처 채택
 
 ## Context and Problem Statement

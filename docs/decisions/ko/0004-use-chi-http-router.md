@@ -3,6 +3,8 @@ status: accepted
 date: 2026-01-01
 ---
 
+> [English version](../0004-use-chi-http-router.md)
+
 # ADR-0004: chi를 HTTP 라우터로 선택
 
 ## Context and Problem Statement

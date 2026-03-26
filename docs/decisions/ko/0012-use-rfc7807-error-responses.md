@@ -3,6 +3,8 @@ status: accepted
 date: 2026-01-01
 ---
 
+> [English version](../0012-use-rfc7807-error-responses.md)
+
 # ADR-0012: RFC 7807 Problem Details 에러 응답 형식
 
 ## Context and Problem Statement

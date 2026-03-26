@@ -3,6 +3,8 @@ status: accepted
 date: 2026-02-01
 ---
 
+> [English version](../0016-add-parser-pipeline.md)
+
 # ADR-0016: 파서 파이프라인 (graceful degradation)
 
 ## Context and Problem Statement

@@ -3,6 +3,8 @@ status: accepted
 date: 2026-01-01
 ---
 
+> [English version](../0013-use-api-version-header.md)
+
 # ADR-0013: URL 버저닝 대신 X-API-Version 응답 헤더 사용
 
 ## Context and Problem Statement

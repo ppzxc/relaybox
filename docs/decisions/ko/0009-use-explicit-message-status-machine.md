@@ -3,6 +3,8 @@ status: accepted
 date: 2026-01-01
 ---
 
+> [English version](../0009-use-explicit-message-status-machine.md)
+
 # ADR-0009: 명시적 메시지 상태 기계
 
 ## Context and Problem Statement

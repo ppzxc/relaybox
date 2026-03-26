@@ -3,6 +3,8 @@ status: accepted
 date: 2026-01-01
 ---
 
+> [English version](../0005-use-ulid-for-message-ids.md)
+
 # ADR-0005: ULID를 메시지 ID로 사용
 
 ## Context and Problem Statement

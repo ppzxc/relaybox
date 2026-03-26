@@ -3,6 +3,8 @@ status: accepted
 date: 2026-01-01
 ---
 
+> [English version](../0006-use-file-based-message-queue.md)
+
 # ADR-0006: 파일 기반 메시지 큐
 
 ## Context and Problem Statement

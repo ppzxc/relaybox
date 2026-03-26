@@ -3,6 +3,8 @@ status: accepted
 date: 2026-01-01
 ---
 
+> [English version](../0010-use-sqlc-for-type-safe-sql.md)
+
 # ADR-0010: sqlc로 타입 안전 SQL 코드 생성
 
 ## Context and Problem Statement

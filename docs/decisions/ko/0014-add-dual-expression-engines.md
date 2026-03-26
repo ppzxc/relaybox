@@ -3,6 +3,8 @@ status: accepted
 date: 2026-02-01
 ---
 
+> [English version](../0014-add-dual-expression-engines.md)
+
 # ADR-0014: CEL + Expr 듀얼 표현식 엔진
 
 ## Context and Problem Statement

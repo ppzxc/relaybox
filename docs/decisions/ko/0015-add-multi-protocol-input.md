@@ -3,6 +3,8 @@ status: accepted
 date: 2026-02-01
 ---
 
+> [English version](../0015-add-multi-protocol-input.md)
+
 # ADR-0015: 다중 프로토콜 입력 지원 (HTTP, WebSocket, TCP)
 
 ## Context and Problem Statement
